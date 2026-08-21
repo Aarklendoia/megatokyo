@@ -14,7 +14,7 @@ use std::sync::Mutex;
 
 use rusqlite::{params, Connection, OptionalExtension};
 
-use crate::domain::{Chapter, Checking, Rant, Strip};
+use crate::domain::{Chapter, Checking, Favorite, Rant, Strip};
 
 #[derive(Debug, thiserror::Error)]
 pub enum StoreError {
@@ -95,6 +95,14 @@ impl Store {
                 last_check TEXT,
                 last_strip_number INTEGER NOT NULL DEFAULT 0,
                 last_rant_number INTEGER NOT NULL DEFAULT 0
+            );
+            CREATE TABLE IF NOT EXISTS favorites (
+                strip_number INTEGER PRIMARY KEY,
+                added_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS reading_progress (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                strip_number INTEGER NOT NULL
             );
             ",
         )?;
@@ -327,6 +335,65 @@ impl Store {
         )?;
         Ok(())
     }
+    // -- favorites ----------------------------------------------------------
+
+    /// Idempotent: starring an already-favorited strip again just keeps the
+    /// original `added_at`, so repeated clicks (or a client retrying a
+    /// dropped request) can't reorder the favorites list.
+    pub fn add_favorite(&self, strip_number: i32, added_at: &str) -> Result<()> {
+        self.conn.lock().unwrap().execute(
+            "INSERT INTO favorites (strip_number, added_at) VALUES (?1, ?2)
+             ON CONFLICT(strip_number) DO NOTHING",
+            params![strip_number, added_at],
+        )?;
+        Ok(())
+    }
+
+    pub fn remove_favorite(&self, strip_number: i32) -> Result<()> {
+        self.conn.lock().unwrap().execute(
+            "DELETE FROM favorites WHERE strip_number = ?1",
+            params![strip_number],
+        )?;
+        Ok(())
+    }
+
+    /// Most recently starred first.
+    pub fn all_favorites(&self) -> Result<Vec<Favorite>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt =
+            conn.prepare("SELECT strip_number, added_at FROM favorites ORDER BY added_at DESC")?;
+        let favorites = stmt
+            .query_map([], |row| {
+                Ok(Favorite {
+                    strip_number: row.get(0)?,
+                    added_at: row.get(1)?,
+                })
+            })?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        Ok(favorites)
+    }
+
+    // -- reading progress -----------------------------------------------------
+
+    pub fn get_reading_progress(&self) -> Result<Option<i32>> {
+        let conn = self.conn.lock().unwrap();
+        conn.query_row(
+            "SELECT strip_number FROM reading_progress WHERE id = 1",
+            [],
+            |row| row.get(0),
+        )
+        .optional()
+        .map_err(StoreError::from)
+    }
+
+    pub fn save_reading_progress(&self, strip_number: i32) -> Result<()> {
+        self.conn.lock().unwrap().execute(
+            "INSERT INTO reading_progress (id, strip_number) VALUES (1, ?1)
+             ON CONFLICT(id) DO UPDATE SET strip_number = excluded.strip_number",
+            params![strip_number],
+        )?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -432,5 +499,51 @@ mod tests {
         };
         store.save_checking(&updated).unwrap();
         assert_eq!(store.get_checking().unwrap(), updated);
+    }
+
+    #[test]
+    fn favorites_round_trip_most_recent_first() {
+        let store = Store::open_in_memory().unwrap();
+        store.add_favorite(1619, "2026-08-21T00:00:00Z").unwrap();
+        store.add_favorite(42, "2026-08-22T00:00:00Z").unwrap();
+        assert_eq!(
+            store.all_favorites().unwrap(),
+            vec![
+                Favorite {
+                    strip_number: 42,
+                    added_at: "2026-08-22T00:00:00Z".to_string()
+                },
+                Favorite {
+                    strip_number: 1619,
+                    added_at: "2026-08-21T00:00:00Z".to_string()
+                },
+            ]
+        );
+        store.remove_favorite(1619).unwrap();
+        assert_eq!(store.all_favorites().unwrap().len(), 1);
+    }
+
+    #[test]
+    fn adding_an_already_favorited_strip_again_keeps_the_original_added_at() {
+        let store = Store::open_in_memory().unwrap();
+        store.add_favorite(1619, "2026-08-21T00:00:00Z").unwrap();
+        store.add_favorite(1619, "2026-08-22T00:00:00Z").unwrap();
+        assert_eq!(
+            store.all_favorites().unwrap(),
+            vec![Favorite {
+                strip_number: 1619,
+                added_at: "2026-08-21T00:00:00Z".to_string()
+            }]
+        );
+    }
+
+    #[test]
+    fn reading_progress_defaults_to_none_then_persists_updates() {
+        let store = Store::open_in_memory().unwrap();
+        assert_eq!(store.get_reading_progress().unwrap(), None);
+        store.save_reading_progress(1619).unwrap();
+        assert_eq!(store.get_reading_progress().unwrap(), Some(1619));
+        store.save_reading_progress(42).unwrap();
+        assert_eq!(store.get_reading_progress().unwrap(), Some(42));
     }
 }
