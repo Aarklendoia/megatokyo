@@ -1,0 +1,24 @@
+[Unit]
+Description=Megatokyo webcomic scraper and API daemon
+Documentation=https://github.com/Aarklendoia/megatokyo
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/megatokyo-daemon
+Restart=on-failure
+RestartSec=5s
+
+# Security settings
+ProtectSystem=strict
+ProtectHome=read-only
+NoNewPrivileges=true
+ReadWritePaths=%h/.local/share/megatokyo %h/.cache/megatokyo %h/.config/megatokyo-daemon %t
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=megatokyo-daemon
+
+[Install]
+WantedBy=default.target

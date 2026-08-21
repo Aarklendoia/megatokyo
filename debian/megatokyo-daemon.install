@@ -1,0 +1,2 @@
+usr/bin/megatokyo-daemon
+usr/lib/systemd/user/megatokyo-daemon.service

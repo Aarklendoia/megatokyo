@@ -1,0 +1,48 @@
+Source: megatokyo
+Section: comm
+Priority: optional
+Maintainer: Édouard Biton <dev@aarklendoia.com>
+Build-Depends:
+  debhelper-compat (= 13),
+  cargo,
+  rustc,
+  pkg-config,
+  build-essential
+Standards-Version: 4.6.1
+Homepage: https://github.com/Aarklendoia/megatokyo
+Vcs-Git: https://github.com/Aarklendoia/megatokyo.git
+Vcs-Browser: https://github.com/Aarklendoia/megatokyo
+Rules-Requires-Root: no
+
+Package: megatokyo-daemon
+Architecture: any
+Depends:
+  ${shlibs:Depends},
+  ${misc:Depends},
+  systemd
+Description: Megatokyo webcomic scraper and API daemon
+ Scrapes megatokyo.com for chapters, strips and the author's rants (blog
+ posts), caches them locally in SQLite, and serves them over a small HTTP
+ API — for megatokyo-gui, or any other client, local or remote.
+ .
+ Also caches rant translations (DeepL) on first request per language.
+
+Package: megatokyo-gui
+Architecture: any
+Depends:
+  ${shlibs:Depends},
+  ${misc:Depends},
+  qml-qt6,
+  qml6-module-qtcore,
+  qml6-module-qtquick,
+  qml6-module-qtquick-controls,
+  qml6-module-qtquick-layouts
+Recommends: megatokyo-daemon
+Description: Megatokyo webcomic reader (QML client)
+ A QML client for browsing the Megatokyo webcomic by chapter or strip,
+ reading the author's rants with on-demand translation, and getting
+ notified when a new strip or rant goes up.
+ .
+ Talks to a megatokyo-daemon instance, local (installed by the
+ Recommends above and started automatically) or remote (configured in
+ Settings).

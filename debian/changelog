@@ -1,0 +1,7 @@
+megatokyo (0.1.0) unstable; urgency=medium
+
+  * Initial scaffold: core scraper/storage/translation library, verified
+    against fixtures of the live site. daemon and gui are still early
+    stubs — see the project's issue tracker for what's left.
+
+ -- Édouard Biton <aarklendoia@proton.me>  Fri, 21 Aug 2026 12:46:35 +0200

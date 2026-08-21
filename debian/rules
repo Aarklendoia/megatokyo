@@ -1,0 +1,41 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+
+include /usr/share/dpkg/architecture.mk
+
+export DH_VERBOSE=1
+export CARGO_HOME=$(CURDIR)/target/cargo
+export RUSTUP_TOOLCHAIN=stable
+export PATH:=$(HOME)/.cargo/bin:$(PATH)
+
+%:
+	dh $@
+
+override_dh_auto_clean:
+	# Do not erase the cargo cache: preserves incremental compilation.
+	# In CI, the target directory is absent anyway (clean clone).
+	true
+
+override_dh_auto_build:
+	cargo build --release --workspace --verbose
+
+override_dh_auto_test:
+	# Every test in this workspace is either fixture-based (scraper, feed)
+	# or mocked (wiremock, for anything that would otherwise hit
+	# megatokyo.com/DeepL) — see core/src/*.rs's test modules — so this is
+	# safe to run in a network-less build environment (Launchpad PPA
+	# builders included).
+	cargo test --release --workspace --verbose
+
+override_dh_auto_install:
+	mkdir -p $(CURDIR)/debian/tmp/usr/bin
+	cp $(CURDIR)/target/release/megatokyo-daemon $(CURDIR)/debian/tmp/usr/bin/
+	cp $(CURDIR)/target/release/megatokyo-gui $(CURDIR)/debian/tmp/usr/bin/
+
+	mkdir -p $(CURDIR)/debian/tmp/usr/lib/systemd/user
+	cp $(CURDIR)/debian/megatokyo-daemon.user.service $(CURDIR)/debian/tmp/usr/lib/systemd/user/megatokyo-daemon.service
+
+override_dh_missing:
+	dh_missing --list-missing
+
+.PHONY: override_dh_auto_build override_dh_auto_test override_dh_auto_install
