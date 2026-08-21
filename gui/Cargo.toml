@@ -13,5 +13,22 @@ description = "QML launcher for megatokyo: spawns qml6 against the daemon's HTTP
 # daemon directly over its HTTP API. megatokyo-core is a path dependency onto
 # a crate already in this workspace (local_ctrl helpers), not a new external
 # dependency.
+#
+# The one deliberate exception is reqwest (blocking): --background mode
+# polls the daemon's /status, which may be a remote one behind HTTPS (see
+# the plan's "Déploiement distant") — a hand-rolled TcpStream (what
+# daemon_link's own loopback-only liveness probe uses) can't speak TLS, and
+# pulling in a TLS-capable client is unavoidable for that one path. The
+# blocking variant keeps this otherwise-synchronous launcher from needing a
+# tokio runtime just for that.
 [dependencies]
 megatokyo-core = { path = "../core" }
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls", "json"] }
+serde_json = "1"
+log = "0.4"
+env_logger = "0.11"
+
+[dev-dependencies]
+tempfile = "3"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+wiremock = "0.6"
