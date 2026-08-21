@@ -1,0 +1,38 @@
+{
+    "app": {
+        "navHome": "الرئيسية",
+        "navReader": "القارئ",
+        "navGallery": "المعرض",
+        "navRants": "المقالات",
+        "statusBackfilling": "المزامنة الأولية…",
+        "statusUpToDate": "محدّث"
+    },
+    "dashboard": {
+        "title": "الرئيسية",
+        "searchPlaceholder": "ابحث عن شريط (العنوان أو الرقم)",
+        "lastStripLabel": "أحدث شريط",
+        "resumeReading": "متابعة القراءة",
+        "lastRantLabel": "أحدث مقالة",
+        "readPost": "قراءة المقالة",
+        "statsStrips": "أشرطة مخزنة",
+        "statsFavorites": "المفضلة",
+        "statsRants": "مقالات"
+    },
+    "reader": {
+        "title": "القارئ",
+        "segAll": "كل الأشرطة",
+        "segMain": "القصة الرئيسية",
+        "jumpFavorites": "★ المفضلة",
+        "jumpChapter": "الفصل",
+        "jumpBonus": "إضافي"
+    },
+    "gallery": {
+        "title": "المعرض",
+        "chipAll": "الكل",
+        "chipFavorites": "★ المفضلة"
+    },
+    "rants": {
+        "title": "المقالات",
+        "loadingTranslation": "جارٍ الترجمة…"
+    }
+}

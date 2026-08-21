@@ -1,0 +1,38 @@
+{
+    "app": {
+        "navHome": "Главная",
+        "navReader": "Чтение",
+        "navGallery": "Галерея",
+        "navRants": "Рассказы",
+        "statusBackfilling": "Первичная синхронизация…",
+        "statusUpToDate": "Актуально"
+    },
+    "dashboard": {
+        "title": "Главная",
+        "searchPlaceholder": "Поиск выпуска (по названию или номеру)",
+        "lastStripLabel": "ПОСЛЕДНИЙ ВЫПУСК",
+        "resumeReading": "Продолжить чтение",
+        "lastRantLabel": "ПОСЛЕДНЯЯ ЗАПИСЬ",
+        "readPost": "Читать запись",
+        "statsStrips": "выпусков в кэше",
+        "statsFavorites": "избранных",
+        "statsRants": "записей"
+    },
+    "reader": {
+        "title": "Чтение",
+        "segAll": "Все выпуски",
+        "segMain": "Основная история",
+        "jumpFavorites": "★ Избранное",
+        "jumpChapter": "Глава",
+        "jumpBonus": "Бонус"
+    },
+    "gallery": {
+        "title": "Галерея",
+        "chipAll": "Все",
+        "chipFavorites": "★ Избранное"
+    },
+    "rants": {
+        "title": "Рассказы",
+        "loadingTranslation": "Перевод…"
+    }
+}

@@ -1,0 +1,38 @@
+{
+    "app": {
+        "navHome": "Start",
+        "navReader": "Leser",
+        "navGallery": "Galerie",
+        "navRants": "Rants",
+        "statusBackfilling": "Erstsynchronisierung…",
+        "statusUpToDate": "Aktuell"
+    },
+    "dashboard": {
+        "title": "Start",
+        "searchPlaceholder": "Comic suchen (Titel oder Nummer)",
+        "lastStripLabel": "NEUESTER COMIC",
+        "resumeReading": "Lesen fortsetzen",
+        "lastRantLabel": "NEUESTER RANT",
+        "readPost": "Beitrag lesen",
+        "statsStrips": "zwischengespeicherte Comics",
+        "statsFavorites": "Favoriten",
+        "statsRants": "Rants"
+    },
+    "reader": {
+        "title": "Leser",
+        "segAll": "Alle Comics",
+        "segMain": "Haupthandlung",
+        "jumpFavorites": "★ Favoriten",
+        "jumpChapter": "Kapitel",
+        "jumpBonus": "Bonus"
+    },
+    "gallery": {
+        "title": "Galerie",
+        "chipAll": "Alle",
+        "chipFavorites": "★ Favoriten"
+    },
+    "rants": {
+        "title": "Rants",
+        "loadingTranslation": "Übersetzung läuft…"
+    }
+}

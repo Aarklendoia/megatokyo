@@ -1,0 +1,38 @@
+{
+    "app": {
+        "navHome": "Inicio",
+        "navReader": "Lector",
+        "navGallery": "Galería",
+        "navRants": "Rants",
+        "statusBackfilling": "Sincronización inicial…",
+        "statusUpToDate": "Actualizado"
+    },
+    "dashboard": {
+        "title": "Inicio",
+        "searchPlaceholder": "Buscar una tira (título o número)",
+        "lastStripLabel": "ÚLTIMA TIRA",
+        "resumeReading": "Reanudar lectura",
+        "lastRantLabel": "ÚLTIMO RANT",
+        "readPost": "Leer la entrada",
+        "statsStrips": "tiras en caché",
+        "statsFavorites": "favoritos",
+        "statsRants": "rants"
+    },
+    "reader": {
+        "title": "Lector",
+        "segAll": "Todas las tiras",
+        "segMain": "Historia principal",
+        "jumpFavorites": "★ Favoritos",
+        "jumpChapter": "Capítulo",
+        "jumpBonus": "Bonus"
+    },
+    "gallery": {
+        "title": "Galería",
+        "chipAll": "Todas",
+        "chipFavorites": "★ Favoritos"
+    },
+    "rants": {
+        "title": "Rants",
+        "loadingTranslation": "Traduciendo…"
+    }
+}

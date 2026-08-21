@@ -1,0 +1,38 @@
+{
+    "app": {
+        "navHome": "主页",
+        "navReader": "阅读",
+        "navGallery": "画廊",
+        "navRants": "闲谈",
+        "statusBackfilling": "首次同步中…",
+        "statusUpToDate": "已是最新"
+    },
+    "dashboard": {
+        "title": "主页",
+        "searchPlaceholder": "搜索漫画(标题或编号)",
+        "lastStripLabel": "最新漫画",
+        "resumeReading": "继续阅读",
+        "lastRantLabel": "最新闲谈",
+        "readPost": "阅读文章",
+        "statsStrips": "已缓存漫画",
+        "statsFavorites": "收藏",
+        "statsRants": "闲谈"
+    },
+    "reader": {
+        "title": "阅读",
+        "segAll": "全部漫画",
+        "segMain": "主线剧情",
+        "jumpFavorites": "★ 收藏",
+        "jumpChapter": "第",
+        "jumpBonus": "番外"
+    },
+    "gallery": {
+        "title": "画廊",
+        "chipAll": "全部",
+        "chipFavorites": "★ 收藏"
+    },
+    "rants": {
+        "title": "闲谈",
+        "loadingTranslation": "翻译中…"
+    }
+}
