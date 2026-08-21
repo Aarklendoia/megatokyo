@@ -26,10 +26,7 @@ pub fn parse(html: &str) -> Vec<Rant> {
     let document = Html::parse_document(html);
     let rant_sel = Selector::parse(r#"div.mainrant[id^="rant"]"#).unwrap();
 
-    document
-        .select(&rant_sel)
-        .filter_map(parse_one)
-        .collect()
+    document.select(&rant_sel).filter_map(parse_one).collect()
 }
 
 fn parse_one(container: ElementRef) -> Option<Rant> {
@@ -62,7 +59,10 @@ fn parse_one(container: ElementRef) -> Option<Rant> {
     let url = format!("https://megatokyo.com/{image_src}");
 
     let date_text = text_of(&container, "p.date")?;
-    let date_part = date_text.split_once(" - ").map(|(_, d)| d).unwrap_or(&date_text);
+    let date_part = date_text
+        .split_once(" - ")
+        .map(|(_, d)| d)
+        .unwrap_or(&date_text);
     let publish_date = date::parse(date_part.trim())?;
 
     let content = first_match(&container, ".rantbody")?.inner_html();

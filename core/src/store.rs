@@ -411,7 +411,9 @@ mod tests {
         let store = Store::open_in_memory().unwrap();
         store.upsert_rant(&sample_rant()).unwrap();
         assert_eq!(store.get_translation(1106, "fr").unwrap(), None);
-        store.save_translation(1106, "fr", "<p>bonjour</p>").unwrap();
+        store
+            .save_translation(1106, "fr", "<p>bonjour</p>")
+            .unwrap();
         assert_eq!(
             store.get_translation(1106, "fr").unwrap(),
             Some("<p>bonjour</p>".to_string())

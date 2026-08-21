@@ -99,8 +99,8 @@ mod tests {
         let categories: Vec<&str> = chapters.iter().map(|c| c.category.as_str()).collect();
         for expected in [
             "C-0", "C-1", "C-2", "C-3", "C-4", "C-5", "C-6", "C-7", "C-8", "C-9", "C-10", "C-11",
-            "C-12", "C-13", "OSE", "GTC", "CIR", "NNM", "UNM", "FMP", "END", "B34CH", "EVN",
-            "DPD", "SGD", "GST",
+            "C-12", "C-13", "OSE", "GTC", "CIR", "NNM", "UNM", "FMP", "END", "B34CH", "EVN", "DPD",
+            "SGD", "GST",
         ] {
             assert!(
                 categories.contains(&expected),

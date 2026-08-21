@@ -160,7 +160,10 @@ mod tests {
     #[test]
     fn free_tier_keys_use_the_free_endpoint() {
         let translator = Translator::new("abc123:fx".to_string());
-        assert_eq!(translator.endpoint(), "https://api-free.deepl.com/v2/translate");
+        assert_eq!(
+            translator.endpoint(),
+            "https://api-free.deepl.com/v2/translate"
+        );
     }
 
     #[test]
@@ -196,7 +199,10 @@ mod tests {
             .await;
 
         let translator = Translator::with_endpoint("bad-key".to_string(), server.uri());
-        assert!(translator.translate_html("<p>hello</p>", "FR").await.is_err());
+        assert!(translator
+            .translate_html("<p>hello</p>", "FR")
+            .await
+            .is_err());
     }
 
     #[tokio::test]

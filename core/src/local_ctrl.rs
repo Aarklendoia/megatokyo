@@ -267,10 +267,7 @@ mod tests {
     #[test]
     fn extract_query_param_reads_a_value_from_the_request_line() {
         let req = "GET /rant?number=1106&lang=fr HTTP/1.1\r\nHost: x\r\n";
-        assert_eq!(
-            extract_query_param(req, "number"),
-            Some("1106".to_string())
-        );
+        assert_eq!(extract_query_param(req, "number"), Some("1106".to_string()));
         assert_eq!(extract_query_param(req, "lang"), Some("fr".to_string()));
         assert_eq!(extract_query_param(req, "missing"), None);
     }
@@ -286,7 +283,10 @@ mod tests {
 
     #[test]
     fn request_path_strips_the_query_string() {
-        assert_eq!(request_path("GET /strip?number=1619 HTTP/1.1\r\n"), "/strip");
+        assert_eq!(
+            request_path("GET /strip?number=1619 HTTP/1.1\r\n"),
+            "/strip"
+        );
     }
 
     #[test]

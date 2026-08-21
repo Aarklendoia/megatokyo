@@ -76,15 +76,12 @@ impl ImageCache {
         let ext = extension_of(source_url)
             .ok_or_else(|| ImageCacheError::NoExtension(source_url.to_string()))?;
 
-        let response =
-            self.client
-                .get(source_url)
-                .send()
-                .await
-                .map_err(|source| ImageCacheError::Download {
-                    url: source_url.to_string(),
-                    source,
-                })?;
+        let response = self.client.get(source_url).send().await.map_err(|source| {
+            ImageCacheError::Download {
+                url: source_url.to_string(),
+                source,
+            }
+        })?;
         if !response.status().is_success() {
             return Err(ImageCacheError::Status {
                 url: source_url.to_string(),
