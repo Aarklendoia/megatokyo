@@ -25,6 +25,13 @@ pub struct FeedItem {
     pub title: String,
     /// ISO 8601 (RFC 3339), taken from the entry's `pubDate`.
     pub published_at: String,
+    /// The entry's `<link>` — for a strip, its page directly; for a rant,
+    /// `https://megatokyo.com/rant/<n>`, which redirects to whichever strip
+    /// page actually hosts it (rants aren't addressable by their own page,
+    /// see `scraper::rants`). Callers that need the strip page should fetch
+    /// this URL and let the HTTP client follow the redirect, rather than
+    /// trying to derive a strip number from the rant number.
+    pub link: String,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -65,11 +72,13 @@ fn entry_to_item(entry: &Entry) -> Option<FeedItem> {
     let title = after_bracket.trim().trim_matches('"').to_string();
 
     let published = entry.published.or(entry.updated)?;
+    let link = entry.links.first()?.href.clone();
     Some(FeedItem {
         kind,
         number,
         title,
         published_at: published.to_rfc3339(),
+        link,
     })
 }
 
@@ -78,7 +87,11 @@ mod tests {
     use super::*;
 
     fn fixture() -> Vec<u8> {
-        std::fs::read(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/feed.xml")).unwrap()
+        std::fs::read(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/fixtures/feed.xml"
+        ))
+        .unwrap()
     }
 
     #[test]
@@ -96,6 +109,30 @@ mod tests {
             .find(|i| i.kind == FeedItemKind::Rant && i.number == 1107)
             .unwrap();
         assert_eq!(rant.title, "It Took Forever, But It's Here!");
+    }
+
+    #[test]
+    fn a_rant_items_link_is_its_own_permalink_not_a_strip_page() {
+        // https://megatokyo.com/rant/<n> 301-redirects to whichever strip
+        // page actually hosts that rant (verified live) — callers fetch
+        // this URL and let the HTTP client follow the redirect, rather than
+        // trying to derive a strip number from the rant number themselves.
+        let items = parse(&fixture()).unwrap();
+        let rant = items
+            .iter()
+            .find(|i| i.kind == FeedItemKind::Rant && i.number == 1107)
+            .unwrap();
+        assert_eq!(rant.link, "https://megatokyo.com/rant/1107");
+    }
+
+    #[test]
+    fn a_strip_items_link_is_its_strip_page() {
+        let items = parse(&fixture()).unwrap();
+        let strip = items
+            .iter()
+            .find(|i| i.kind == FeedItemKind::Strip && i.number == 1619)
+            .unwrap();
+        assert_eq!(strip.link, "https://megatokyo.com/strip/1619");
     }
 
     #[test]
