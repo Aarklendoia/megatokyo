@@ -32,9 +32,11 @@ Item {
         contentWidth: availableWidth
 
         ColumnLayout {
-            width: root.width
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.margins: 28
             spacing: 22
-            Layout.margins: 28
 
             Label {
                 text: I18n.tr("dashboard.title")
