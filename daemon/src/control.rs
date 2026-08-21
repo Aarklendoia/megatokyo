@@ -12,7 +12,7 @@ use std::sync::Arc;
 
 use megatokyo_core::image_cache::{content_type_for, ImageCache};
 use megatokyo_core::local_ctrl::{
-    constant_time_eq, extract_header, extract_query_param, request_path,
+    constant_time_eq, extract_header, extract_query_param, request_method, request_path,
 };
 use megatokyo_core::store::Store;
 use megatokyo_core::translate::{get_translated_rant, Translator};
@@ -163,6 +163,8 @@ async fn route(req: &str, path: &str, state: &AppState) -> Response {
         "/rant" => route_rant(req, state).await,
         "/image" => route_image(req, state).await,
         "/status" => route_status(state),
+        "/favorites" => route_favorites(req, state),
+        "/progress" => route_progress(req, state),
         "/check" => {
             state.check_requested.notify_one();
             Response::ok_json(&serde_json::json!({"ok": true}))
@@ -266,6 +268,67 @@ fn route_status(state: &AppState) -> Response {
             "backfilling": state.backfilling.load(Ordering::Relaxed),
         })),
         Err(err) => Response::server_error(&err.to_string()),
+    }
+}
+
+/// `GET` lists favorites (most recently starred first), `POST` stars a
+/// strip, `DELETE` unstars one — no user concept, see
+/// `megatokyo_core::domain::Favorite`'s doc comment: one shared list per
+/// daemon instance, gated by the same token as everything else.
+fn route_favorites(req: &str, state: &AppState) -> Response {
+    match request_method(req) {
+        "GET" => match state.store.all_favorites() {
+            Ok(favorites) => Response::ok_json(&favorites),
+            Err(err) => Response::server_error(&err.to_string()),
+        },
+        "POST" => {
+            let number = match parse_number(req) {
+                Ok(n) => n,
+                Err(response) => return response,
+            };
+            let added_at = chrono::Utc::now().to_rfc3339();
+            match state.store.add_favorite(number, &added_at) {
+                Ok(()) => Response::ok_json(&serde_json::json!({"ok": true})),
+                Err(err) => Response::server_error(&err.to_string()),
+            }
+        }
+        "DELETE" => {
+            let number = match parse_number(req) {
+                Ok(n) => n,
+                Err(response) => return response,
+            };
+            match state.store.remove_favorite(number) {
+                Ok(()) => Response::ok_json(&serde_json::json!({"ok": true})),
+                Err(err) => Response::server_error(&err.to_string()),
+            }
+        }
+        _ => Response::not_found(),
+    }
+}
+
+/// `GET` reports the last strip number the user was reading (`null` if
+/// never set), `POST` updates it — same single-daemon-wide state as
+/// favorites, meant to let a client "resume where they left off" on any
+/// device pointed at the same daemon.
+fn route_progress(req: &str, state: &AppState) -> Response {
+    match request_method(req) {
+        "GET" => match state.store.get_reading_progress() {
+            Ok(strip_number) => Response::ok_json(&serde_json::json!({
+                "strip_number": strip_number,
+            })),
+            Err(err) => Response::server_error(&err.to_string()),
+        },
+        "POST" => {
+            let number = match parse_number(req) {
+                Ok(n) => n,
+                Err(response) => return response,
+            };
+            match state.store.save_reading_progress(number) {
+                Ok(()) => Response::ok_json(&serde_json::json!({"ok": true})),
+                Err(err) => Response::server_error(&err.to_string()),
+            }
+        }
+        _ => Response::not_found(),
     }
 }
 
@@ -374,6 +437,53 @@ mod tests {
         let body: serde_json::Value = serde_json::from_slice(&response.body).unwrap();
         assert_eq!(body["last_strip_number"], 0);
         assert_eq!(body["backfilling"], false);
+    }
+
+    #[tokio::test]
+    async fn favorites_can_be_added_listed_and_removed() {
+        let state = state();
+        let response = route(
+            "POST /favorites?number=1619 HTTP/1.1\r\n",
+            "/favorites",
+            &state,
+        )
+        .await;
+        assert_eq!(response.status, "200 OK");
+
+        let response = route("GET /favorites HTTP/1.1\r\n", "/favorites", &state).await;
+        let body: serde_json::Value = serde_json::from_slice(&response.body).unwrap();
+        assert_eq!(body[0]["strip_number"], 1619);
+
+        let response = route(
+            "DELETE /favorites?number=1619 HTTP/1.1\r\n",
+            "/favorites",
+            &state,
+        )
+        .await;
+        assert_eq!(response.status, "200 OK");
+        let response = route("GET /favorites HTTP/1.1\r\n", "/favorites", &state).await;
+        let body: serde_json::Value = serde_json::from_slice(&response.body).unwrap();
+        assert_eq!(body.as_array().unwrap().len(), 0);
+    }
+
+    #[tokio::test]
+    async fn reading_progress_is_null_until_set() {
+        let state = state();
+        let response = route("GET /progress HTTP/1.1\r\n", "/progress", &state).await;
+        let body: serde_json::Value = serde_json::from_slice(&response.body).unwrap();
+        assert_eq!(body["strip_number"], serde_json::Value::Null);
+
+        let response = route(
+            "POST /progress?number=1619 HTTP/1.1\r\n",
+            "/progress",
+            &state,
+        )
+        .await;
+        assert_eq!(response.status, "200 OK");
+
+        let response = route("GET /progress HTTP/1.1\r\n", "/progress", &state).await;
+        let body: serde_json::Value = serde_json::from_slice(&response.body).unwrap();
+        assert_eq!(body["strip_number"], 1619);
     }
 
     #[tokio::test]
