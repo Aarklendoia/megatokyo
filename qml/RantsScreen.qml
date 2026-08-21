@@ -1,0 +1,186 @@
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
+
+// Rants screen: list + detail, with a language picker that calls
+// GET /rant?number=N&lang=xx (cached server-side by the daemon after the
+// first translation, see core::translate) — this screen keeps its own
+// per-session cache too, so switching back to an already-seen language is
+// instant.
+Item {
+    id: root
+
+    property var api: null
+    property var rants: []
+    property int selectedNumber: -1
+
+    readonly property var theme: Theme {}
+
+    readonly property var languages: [
+        { code: "en", label: "EN" },
+        { code: "fr", label: "FR" },
+        { code: "de", label: "DE" },
+        { code: "ja", label: "JA" }
+    ]
+    property string selectedLang: "en"
+    property var translationCache: ({})
+    property bool loadingTranslation: false
+
+    readonly property var selectedRant: rants.find(function (r) {
+        return r.number === selectedNumber
+    })
+
+    readonly property string displayedContent: {
+        if (!selectedRant)
+            return ""
+        if (selectedLang === "en")
+            return selectedRant.content
+        var key = selectedRant.number + "_" + selectedLang
+        return translationCache[key] !== undefined ? translationCache[key] : ""
+    }
+
+    onRantsChanged: {
+        if (selectedNumber === -1 && rants.length > 0)
+            selectedNumber = rants[0].number
+    }
+
+    function selectLang(code) {
+        selectedLang = code
+        if (code === "en" || !selectedRant)
+            return
+        var key = selectedRant.number + "_" + code
+        if (translationCache[key] !== undefined)
+            return
+        loadingTranslation = true
+        api.get("/rant?number=" + selectedRant.number + "&lang=" + code, function (body) {
+            var updated = Object.assign({}, translationCache)
+            updated[key] = body.content
+            translationCache = updated
+            loadingTranslation = false
+        }, function () {
+            loadingTranslation = false
+        })
+    }
+
+    RowLayout {
+        anchors.fill: parent
+        anchors.margins: 28
+        spacing: 20
+
+        ColumnLayout {
+            Layout.preferredWidth: 220
+            Layout.fillHeight: true
+            spacing: 12
+
+            Label {
+                text: I18n.tr("rants.title")
+                font.family: theme.fontDisplay
+                font.pixelSize: 20
+                font.bold: true
+                color: theme.text
+            }
+
+            ListView {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+                model: root.rants
+                delegate: Rectangle {
+                    width: ListView.view.width
+                    height: 46
+                    radius: 9
+                    color: modelData.number === root.selectedNumber ? theme.panelRaised : "transparent"
+                    border.color: modelData.number === root.selectedNumber ? theme.lineSoft : "transparent"
+                    border.width: 1
+
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.margins: 8
+                        spacing: 1
+                        Label {
+                            text: "#" + modelData.number + " · " + modelData.publish_date.slice(0, 10)
+                            font.family: theme.fontMono
+                            font.pixelSize: 9
+                            color: theme.textFaint
+                        }
+                        Label {
+                            text: modelData.title
+                            font.pixelSize: 12
+                            color: modelData.number === root.selectedNumber ? theme.teal : theme.text
+                            elide: Text.ElideRight
+                            Layout.fillWidth: true
+                        }
+                    }
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            root.selectedNumber = modelData.number
+                            root.selectedLang = "en"
+                        }
+                    }
+                }
+            }
+        }
+
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            spacing: 8
+
+            Label {
+                text: root.selectedRant ? root.selectedRant.title : ""
+                font.family: theme.fontDisplay
+                font.pixelSize: 18
+                font.bold: true
+                color: theme.text
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+            }
+            Label {
+                text: root.selectedRant ? (root.selectedRant.author + " · #" + root.selectedRant.number + " · " + root.selectedRant.publish_date.slice(0, 10)) : ""
+                font.family: theme.fontMono
+                font.pixelSize: 11
+                color: theme.textFaint
+            }
+
+            Row {
+                spacing: 6
+                Repeater {
+                    model: root.languages
+                    delegate: Rectangle {
+                        width: 40; height: 24; radius: 6
+                        color: root.selectedLang === modelData.code ? theme.teal : "transparent"
+                        border.color: root.selectedLang === modelData.code ? theme.teal : theme.line
+                        border.width: 1
+                        Label {
+                            anchors.centerIn: parent
+                            text: modelData.label
+                            font.family: theme.fontMono
+                            font.pixelSize: 10
+                            color: root.selectedLang === modelData.code ? theme.ink : theme.textDim
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: root.selectLang(modelData.code)
+                        }
+                    }
+                }
+            }
+
+            ScrollView {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+
+                Label {
+                    width: parent.width
+                    text: root.loadingTranslation ? I18n.tr("rants.loadingTranslation") : root.displayedContent
+                    textFormat: Text.RichText
+                    wrapMode: Text.WordWrap
+                    color: theme.textDim
+                    font.pixelSize: 13
+                    lineHeight: 1.5
+                }
+            }
+        }
+    }
+}

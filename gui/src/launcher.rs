@@ -90,6 +90,10 @@ pub fn run(link: &DaemonLink) -> std::process::ExitCode {
         .env("QT_QPA_PLATFORM", "xcb;wayland;offscreen")
         .env("QT_APPLICATION_DISPLAY_NAME", "Megatokyo")
         .env("QT_QPA_DESKTOPFILENAME", "megatokyo")
+        // Qt blocks local-file XHR reads by default; I18n.qml needs one to
+        // load qml/i18n/<lang>.json (same requirement as
+        // linux_hello_config's own I18n.qml).
+        .env("QML_XHR_ALLOW_FILE_READ", "1")
         .status();
 
     match status {

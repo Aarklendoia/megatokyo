@@ -17,6 +17,9 @@ Cargo.lock
 *~
 .DS_Store
 
+# Claude Code local session state
+.claude/
+
 # Build artifacts
 *.so
 *.a

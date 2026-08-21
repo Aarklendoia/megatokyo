@@ -1,0 +1,38 @@
+{
+    "app": {
+        "navHome": "Home",
+        "navReader": "Reader",
+        "navGallery": "Gallery",
+        "navRants": "Rants",
+        "statusBackfilling": "Initial sync…",
+        "statusUpToDate": "Up to date"
+    },
+    "dashboard": {
+        "title": "Home",
+        "searchPlaceholder": "Search a strip (title or number)",
+        "lastStripLabel": "LATEST STRIP",
+        "resumeReading": "Resume reading",
+        "lastRantLabel": "LATEST RANT",
+        "readPost": "Read post",
+        "statsStrips": "cached strips",
+        "statsFavorites": "favorites",
+        "statsRants": "rants"
+    },
+    "reader": {
+        "title": "Reader",
+        "segAll": "All strips",
+        "segMain": "Main story",
+        "jumpFavorites": "★ Favorites",
+        "jumpChapter": "Chapter",
+        "jumpBonus": "Bonus"
+    },
+    "gallery": {
+        "title": "Gallery",
+        "chipAll": "All",
+        "chipFavorites": "★ Favorites"
+    },
+    "rants": {
+        "title": "Rants",
+        "loadingTranslation": "Translating…"
+    }
+}

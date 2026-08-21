@@ -60,10 +60,7 @@ async fn handle_connection(mut stream: TcpStream, state: &AppState) -> std::io::
     let response = if path == "/health" {
         Response::text("OK")
     } else {
-        let token_ok = extract_header(&req, TOKEN_HEADER)
-            .map(|t| constant_time_eq(t, &state.token))
-            .unwrap_or(false);
-        if !token_ok {
+        if !is_authorized(&req, &path, &state.token) {
             Response {
                 status: "403 Forbidden",
                 content_type: "application/json",
@@ -76,6 +73,20 @@ async fn handle_connection(mut stream: TcpStream, state: &AppState) -> std::io::
 
     stream.write_all(&response.into_bytes()).await?;
     Ok(())
+}
+
+/// Every route but `/health` requires the token header — except `/image`,
+/// which also accepts `?token=` since the QML `Image` element can't set a
+/// custom request header (an `<img>`-style signed-URL pattern, scoped to
+/// just this one route rather than weakening auth everywhere).
+fn is_authorized(req: &str, path: &str, token: &str) -> bool {
+    extract_header(req, TOKEN_HEADER)
+        .map(|t| constant_time_eq(t, token))
+        .unwrap_or(false)
+        || (path == "/image"
+            && extract_query_param(req, "token")
+                .map(|t| constant_time_eq(&t, token))
+                .unwrap_or(false))
 }
 
 struct Response {
@@ -353,6 +364,34 @@ mod tests {
         let state = state();
         let response = route_or_health("GET /health HTTP/1.1\r\n", &state).await;
         assert_eq!(response.status, "200 OK");
+    }
+
+    #[test]
+    fn is_authorized_accepts_the_header_on_any_route() {
+        assert!(is_authorized(
+            "GET /chapters HTTP/1.1\r\nx-megatokyo-daemon-token: secret\r\n",
+            "/chapters",
+            "secret"
+        ));
+        assert!(!is_authorized(
+            "GET /chapters HTTP/1.1\r\nx-megatokyo-daemon-token: wrong\r\n",
+            "/chapters",
+            "secret"
+        ));
+    }
+
+    #[test]
+    fn is_authorized_accepts_a_query_token_only_for_image() {
+        assert!(is_authorized(
+            "GET /image?number=1619&token=secret HTTP/1.1\r\n",
+            "/image",
+            "secret"
+        ));
+        assert!(!is_authorized(
+            "GET /chapters?token=secret HTTP/1.1\r\n",
+            "/chapters",
+            "secret"
+        ));
     }
 
     async fn route_or_health(req: &str, state: &AppState) -> Response {
