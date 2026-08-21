@@ -1,0 +1,42 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Megatokyo
+Comment=Megatokyo webcomic reader
+Icon=megatokyo
+Exec=megatokyo-gui
+Categories=Network;
+Keywords=comic;webcomic;manga;megatokyo;
+StartupNotify=true
+StartupWMClass=megatokyo
+Terminal=false
+NotShowIn=
+
+X-KDE-StartupNotify=true
+
+Name[fr]=Megatokyo
+Comment[fr]=Lecteur du webcomic Megatokyo
+
+Name[zh]=Megatokyo
+Comment[zh]=Megatokyo 网络漫画阅读器
+
+Name[es]=Megatokyo
+Comment[es]=Lector del webcómic Megatokyo
+
+Name[de]=Megatokyo
+Comment[de]=Megatokyo-Webcomic-Reader
+
+Name[pt]=Megatokyo
+Comment[pt]=Leitor do webcomic Megatokyo
+
+Name[ru]=Megatokyo
+Comment[ru]=Читалка веб-комикса Megatokyo
+
+Name[ja]=Megatokyo
+Comment[ja]=Megatokyo ウェブコミックリーダー
+
+Name[hi]=Megatokyo
+Comment[hi]=Megatokyo वेबकॉमिक रीडर
+
+Name[ar]=Megatokyo
+Comment[ar]=قارئ ويب كوميك Megatokyo

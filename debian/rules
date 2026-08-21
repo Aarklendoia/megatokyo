@@ -35,7 +35,19 @@ override_dh_auto_install:
 	mkdir -p $(CURDIR)/debian/tmp/usr/lib/systemd/user
 	cp $(CURDIR)/debian/megatokyo-daemon.user.service $(CURDIR)/debian/tmp/usr/lib/systemd/user/megatokyo-daemon.service
 
+override_dh_install:
+	dh_install
+	# QML sources: find_qml_path()'s primary candidate in gui/src/launcher.rs.
+	mkdir -p $(CURDIR)/debian/megatokyo-gui/usr/share/megatokyo
+	cp -r $(CURDIR)/qml $(CURDIR)/debian/megatokyo-gui/usr/share/megatokyo/
+	# App icon (raster, not vector — see qml/icons/app-icon.png's own
+	# note) with the correct filename (dh_install can't rename), in a
+	# fixed-size hicolor directory rather than scalable/, which the
+	# icon theme spec reserves for actual vector artwork.
+	mkdir -p $(CURDIR)/debian/megatokyo-gui/usr/share/icons/hicolor/512x512/apps
+	cp $(CURDIR)/qml/icons/app-icon.png $(CURDIR)/debian/megatokyo-gui/usr/share/icons/hicolor/512x512/apps/megatokyo.png
+
 override_dh_missing:
 	dh_missing --list-missing
 
-.PHONY: override_dh_auto_build override_dh_auto_test override_dh_auto_install
+.PHONY: override_dh_auto_build override_dh_auto_test override_dh_auto_install override_dh_install
