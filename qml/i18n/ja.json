@@ -1,0 +1,38 @@
+{
+    "app": {
+        "navHome": "ホーム",
+        "navReader": "リーダー",
+        "navGallery": "ギャラリー",
+        "navRants": "ラント",
+        "statusBackfilling": "初回同期中…",
+        "statusUpToDate": "最新"
+    },
+    "dashboard": {
+        "title": "ホーム",
+        "searchPlaceholder": "ストリップを検索(タイトルまたは番号)",
+        "lastStripLabel": "最新のストリップ",
+        "resumeReading": "続きを読む",
+        "lastRantLabel": "最新のラント",
+        "readPost": "投稿を読む",
+        "statsStrips": "キャッシュ済みストリップ",
+        "statsFavorites": "お気に入り",
+        "statsRants": "ラント"
+    },
+    "reader": {
+        "title": "リーダー",
+        "segAll": "すべてのストリップ",
+        "segMain": "本編のみ",
+        "jumpFavorites": "★ お気に入り",
+        "jumpChapter": "第",
+        "jumpBonus": "ボーナス"
+    },
+    "gallery": {
+        "title": "ギャラリー",
+        "chipAll": "すべて",
+        "chipFavorites": "★ お気に入り"
+    },
+    "rants": {
+        "title": "ラント",
+        "loadingTranslation": "翻訳中…"
+    }
+}
