@@ -7,6 +7,7 @@
 
 use std::path::PathBuf;
 use std::process::Command;
+use std::thread;
 
 use megatokyo_core::local_ctrl::{runtime_dir, write_owner_only_file};
 
@@ -77,8 +78,8 @@ pub fn run(link: &DaemonLink) -> std::process::ExitCode {
     // base_url/token passed positionally after `--`, not as env vars: QML
     // reads `Qt.application.arguments`, but not always the process
     // environment (see linux_hello_config's own note on this).
-    let status = Command::new("qml6")
-        .arg("-name")
+    let mut cmd = Command::new("qml6");
+    cmd.arg("-name")
         .arg("megatokyo")
         .arg(&qml_path)
         .arg("--")
@@ -89,15 +90,76 @@ pub fn run(link: &DaemonLink) -> std::process::ExitCode {
         .env("QT_PLUGIN_PATH", &qt_plugin_paths)
         .env("QT_QPA_PLATFORM", "xcb;wayland;offscreen")
         .env("QT_APPLICATION_DISPLAY_NAME", "Megatokyo")
-        .env("QT_QPA_DESKTOPFILENAME", "megatokyo")
-        .status();
+        .env("QT_QPA_DESKTOPFILENAME", "megatokyo");
 
-    match status {
-        Ok(status) if status.success() => std::process::ExitCode::SUCCESS,
-        Ok(_) => std::process::ExitCode::FAILURE,
+    match cmd.spawn() {
+        Ok(mut child) => {
+            // See fix_window_desktop_file's doc comment.
+            thread::spawn(fix_window_desktop_file);
+            match child.wait() {
+                Ok(status) if status.success() => std::process::ExitCode::SUCCESS,
+                Ok(_) => std::process::ExitCode::FAILURE,
+                Err(err) => {
+                    eprintln!("qml6 did not exit cleanly: {err}");
+                    std::process::ExitCode::FAILURE
+                }
+            }
+        }
         Err(err) => {
             eprintln!("Could not launch qml6: {err}");
             std::process::ExitCode::FAILURE
+        }
+    }
+}
+
+/// Overrides the `_KDE_NET_WM_DESKTOP_FILE` X property on our just-launched
+/// window so KWin resolves the icon via `megatokyo.desktop` (and its
+/// `Icon=megatokyo` entry) instead of the generic `qml6` tool's own. Polls
+/// briefly since the window isn't mapped the instant the process spawns.
+/// Ported from `linux_hello_config`'s own fixup (same root cause: the stock
+/// `qml6` runtime stamps its own `_KDE_NET_WM_DESKTOP_FILE`
+/// ("org.qt-project.qml") on every window it creates, which
+/// `QT_QPA_DESKTOPFILENAME` alone doesn't override). Best-effort:
+/// X11/XWayland only, silently skipped if `xprop` isn't installed or under
+/// a pure-Wayland session.
+fn fix_window_desktop_file() {
+    for _ in 0..20 {
+        thread::sleep(std::time::Duration::from_millis(150));
+
+        let Ok(list) = Command::new("xprop")
+            .args(["-root", "_NET_CLIENT_LIST"])
+            .output()
+        else {
+            return; // xprop not installed — nothing we can do, not fatal
+        };
+        let list = String::from_utf8_lossy(&list.stdout);
+
+        for window_id in list.split_whitespace().filter(|s| s.starts_with("0x")) {
+            let window_id = window_id.trim_end_matches(',');
+            let Ok(class) = Command::new("xprop")
+                .args(["-id", window_id, "WM_CLASS"])
+                .output()
+            else {
+                return;
+            };
+            let class = String::from_utf8_lossy(&class.stdout);
+            if !class.contains("\"megatokyo\"") {
+                continue;
+            }
+
+            let _ = Command::new("xprop")
+                .args([
+                    "-id",
+                    window_id,
+                    "-f",
+                    "_KDE_NET_WM_DESKTOP_FILE",
+                    "8u",
+                    "-set",
+                    "_KDE_NET_WM_DESKTOP_FILE",
+                    "megatokyo",
+                ])
+                .status();
+            return;
         }
     }
 }
