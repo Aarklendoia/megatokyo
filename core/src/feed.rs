@@ -60,10 +60,9 @@ fn entry_to_item(entry: &Entry) -> Option<FeedItem> {
     let raw_title = entry.title.as_ref()?.content.as_str();
     let (kind, rest) = if let Some(rest) = raw_title.strip_prefix("Comic ") {
         (FeedItemKind::Strip, rest)
-    } else if let Some(rest) = raw_title.strip_prefix("Rant ") {
-        (FeedItemKind::Rant, rest)
     } else {
-        return None;
+        let rest = raw_title.strip_prefix("Rant ")?;
+        (FeedItemKind::Rant, rest)
     };
 
     let rest = rest.strip_prefix('[')?;
