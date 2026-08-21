@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/Aarklendoia/megatokyo/compare/v0.2.0...v0.2.1) (2026-08-21)
+
+
+### Bug Fixes
+
+* **ci:** grant contents:write so build-debian.yml can attach release assets ([#15](https://github.com/Aarklendoia/megatokyo/issues/15)) ([d90e89b](https://github.com/Aarklendoia/megatokyo/commit/d90e89b0b29d813a5d2181907aada8d0b957a5c9))
+
 ## [0.2.0](https://github.com/Aarklendoia/megatokyo/compare/v0.1.0...v0.2.0) (2026-08-21)
 
 
