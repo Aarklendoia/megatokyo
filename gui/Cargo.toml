@@ -1,0 +1,17 @@
+[package]
+name = "megatokyo-gui"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "QML launcher for megatokyo: spawns qml6 against the daemon's HTTP API, or runs --background as a notification watcher"
+
+# Deliberately no Qt/GUI binding crate (no cxx-qt, no qmetaobject-rs), same
+# choice as linux-hello's linux_hello_config and kio-protondrive's wizard:
+# this binary spawns Qt's own `qml6` runtime for the UI and talks to the
+# daemon directly over its HTTP API. megatokyo-core is a path dependency onto
+# a crate already in this workspace (local_ctrl helpers), not a new external
+# dependency.
+[dependencies]
+megatokyo-core = { path = "../core" }

@@ -1,0 +1,11 @@
+[package]
+name = "megatokyo-daemon"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Background service: scrapes megatokyo.com, caches strips/rants/translations, serves the HTTP API"
+
+[dependencies]
+megatokyo-core = { path = "../core" }
