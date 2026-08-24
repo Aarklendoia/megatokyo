@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.0](https://github.com/Aarklendoia/megatokyo/compare/v0.2.0...v0.3.0) (2026-08-24)
+
+
+### Features
+
+* Settings screen (remote daemon config, DeepL key, notifications) ([#18](https://github.com/Aarklendoia/megatokyo/issues/18)) ([66682af](https://github.com/Aarklendoia/megatokyo/commit/66682af16c5481d19eeb44c2dd59a79fa9a23b15))
+
+
+### Bug Fixes
+
+* **ci:** grant contents:write so build-debian.yml can attach release assets ([#15](https://github.com/Aarklendoia/megatokyo/issues/15)) ([d90e89b](https://github.com/Aarklendoia/megatokyo/commit/d90e89b0b29d813a5d2181907aada8d0b957a5c9))
+* **packaging:** resolve remaining lintian findings from [#6](https://github.com/Aarklendoia/megatokyo/issues/6) ([#17](https://github.com/Aarklendoia/megatokyo/issues/17)) ([2d2fef8](https://github.com/Aarklendoia/megatokyo/commit/2d2fef80eddb9c8702d70c26b24772bb01f7094b))
+
 ## [0.2.0](https://github.com/Aarklendoia/megatokyo/compare/v0.1.0...v0.2.0) (2026-08-21)
 
 
