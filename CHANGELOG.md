@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0](https://github.com/Aarklendoia/megatokyo/compare/v0.3.1...v0.4.0) (2026-08-24)
+
+
+### Features
+
+* **rants:** backfill every rant, not just the RSS feed's last 5 ([#23](https://github.com/Aarklendoia/megatokyo/issues/23)) ([d3754a8](https://github.com/Aarklendoia/megatokyo/commit/d3754a8a347e85d1e59c0c1a519ed72e272e356f))
+
+
+### Bug Fixes
+
+* **qml:** stop clipping the tops of letters in TextField boxes ([#25](https://github.com/Aarklendoia/megatokyo/issues/25)) ([3bbab5b](https://github.com/Aarklendoia/megatokyo/commit/3bbab5bb5c0ded6965b82f4c4f03b3d2ea4b4623))
+
 ## [0.3.1](https://github.com/Aarklendoia/megatokyo/compare/v0.3.0...v0.3.1) (2026-08-24)
 
 
