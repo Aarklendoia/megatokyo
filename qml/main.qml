@@ -238,6 +238,7 @@ ApplicationWindow {
                 chapters: window.chapters
                 favorites: window.favorites
                 openReader: window.openReader
+                toggleFavorite: window.toggleFavorite
             }
 
             RantsScreen {

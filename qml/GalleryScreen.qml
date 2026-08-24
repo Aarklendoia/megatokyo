@@ -12,6 +12,7 @@ Item {
     property var chapters: []
     property var favorites: []
     property var openReader: function (number) {}
+    property var toggleFavorite: function (number) {}
 
     readonly property var theme: Theme {}
 
@@ -182,19 +183,37 @@ Item {
                         }
                     }
 
-                    Label {
-                        visible: root.favoriteNumbers.indexOf(modelData.number) !== -1
-                        anchors.top: parent.top
-                        anchors.right: parent.right
-                        anchors.margins: 6
-                        text: "♥"
-                        color: theme.red
-                        font.pixelSize: 13
-                    }
-
                     MouseArea {
                         anchors.fill: parent
                         onClicked: root.openReader(modelData.number)
+                    }
+
+                    // Favorite toggle — always visible (not just when
+                    // already favorited), and placed after the big
+                    // MouseArea above so it sits on top and intercepts
+                    // clicks in its corner instead of opening the reader.
+                    // The only other way to favorite a strip used to be a
+                    // small icon buried in the Reader.
+                    Rectangle {
+                        readonly property bool isFavorite: root.favoriteNumbers.indexOf(modelData.number) !== -1
+                        anchors.top: parent.top
+                        anchors.right: parent.right
+                        anchors.margins: 6
+                        width: 24; height: 24; radius: 12
+                        color: Qt.rgba(0.05, 0.05, 0.07, 0.65)
+                        border.color: isFavorite ? theme.red : theme.line
+                        border.width: 1
+
+                        Label {
+                            anchors.centerIn: parent
+                            text: parent.isFavorite ? "♥" : "♡"
+                            color: parent.isFavorite ? theme.red : theme.textDim
+                            font.pixelSize: 12
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: root.toggleFavorite(modelData.number)
+                        }
                     }
                 }
             }
