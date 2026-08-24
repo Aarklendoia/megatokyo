@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.0](https://github.com/Aarklendoia/megatokyo/compare/v0.5.1...v0.6.0) (2026-08-24)
+
+
+### Features
+
+* **qml:** improve Rants readability — reading width, search, scrollbar ([#43](https://github.com/Aarklendoia/megatokyo/issues/43)) ([45f8fd5](https://github.com/Aarklendoia/megatokyo/commit/45f8fd58b30f5d9bf2e561d829318464f47b9e32))
+
+
+### Bug Fixes
+
+* **qml:** pin the Rants list panel to a fixed width, keep "Rants" untranslated ([#40](https://github.com/Aarklendoia/megatokyo/issues/40)) ([5229475](https://github.com/Aarklendoia/megatokyo/commit/522947577d6479e3be7116f0d251071e20cd2dfa))
+
 ## [0.5.1](https://github.com/Aarklendoia/megatokyo/compare/v0.5.0...v0.5.1) (2026-08-24)
 
 
