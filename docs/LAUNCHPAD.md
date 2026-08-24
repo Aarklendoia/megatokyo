@@ -24,6 +24,18 @@ instead of downloading `.deb` files from GitHub Releases. This mirrors
   Private key added as the `PPA_GPG_PRIVATE_KEY` repository secret.
 - PPA: `ppa:aarklendoia-edtech/megatokyo`
   (<https://launchpad.net/~aarklendoia-edtech/+archive/ubuntu/megatokyo>)
+- PPA description (Launchpad's own "Change details" field, not something
+  `debian/control` or this repo governs — edit it there if it ever needs
+  updating):
+
+  ```text
+  Unofficial Megatokyo webcomic reader for Linux. A Qt/QML desktop client
+  (megatokyo-gui) backed by a scraper/API daemon (megatokyo-daemon) that
+  caches strips and Fred Gallagher's rants locally and translates rants
+  on demand via DeepL.
+
+  https://github.com/Aarklendoia/megatokyo
+  ```
 
 Launchpad's build farm has no general internet access, so the plain `cargo
 build --release` in `debian/rules` would fail there — see
