@@ -1,0 +1,28 @@
+[Unit]
+Description=Megatokyo desktop notifications for new strips and rants
+Documentation=https://github.com/Aarklendoia/megatokyo
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/megatokyo-gui --background
+Restart=on-failure
+RestartSec=5s
+
+# Security settings — mirrors megatokyo-daemon.user.service. %t is needed
+# for the session D-Bus socket notify-send talks to (ProtectHome=read-only
+# also covers /run/user, not just /home — see systemd.exec(5)), not for any
+# state of this service's own: XDG_RUNTIME_DIR isn't otherwise touched here,
+# unlike the daemon's own unit.
+ProtectSystem=strict
+ProtectHome=read-only
+NoNewPrivileges=true
+ReadWritePaths=%h/.local/state/megatokyo-gui %t
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=megatokyo-gui-background
+
+[Install]
+WantedBy=default.target

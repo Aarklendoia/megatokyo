@@ -1,2 +1,3 @@
 usr/bin/megatokyo-gui
+usr/lib/systemd/user/megatokyo-gui-background.service
 megatokyo.desktop usr/share/applications
