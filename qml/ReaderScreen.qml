@@ -224,6 +224,54 @@ Item {
                     asynchronous: true
                 }
 
+                // Click-to-turn-page zones — the whole left/right half of
+                // the strip, not just the small ‹/› buttons, mirroring how
+                // most comic readers let you click the page itself.
+                // Placed here (after the Image, before the favorite badge
+                // and title bar below) so those two stay on top and remain
+                // clickable in their own corners despite overlapping these
+                // zones.
+                MouseArea {
+                    anchors.left: parent.left
+                    anchors.top: parent.top
+                    anchors.bottom: parent.bottom
+                    width: parent.width / 2
+                    enabled: root.currentIndex > 0
+                    cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                    hoverEnabled: true
+                    onClicked: root.goTo(-1)
+                    Label {
+                        anchors.left: parent.left
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.leftMargin: 8
+                        text: "‹"
+                        font.pixelSize: 28
+                        color: theme.text
+                        opacity: parent.containsMouse ? 0.5 : 0
+                        Behavior on opacity { NumberAnimation { duration: 120 } }
+                    }
+                }
+                MouseArea {
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    anchors.bottom: parent.bottom
+                    width: parent.width / 2
+                    enabled: root.currentIndex >= 0 && root.currentIndex < root.filteredStrips.length - 1
+                    cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                    hoverEnabled: true
+                    onClicked: root.goTo(1)
+                    Label {
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.rightMargin: 8
+                        text: "›"
+                        font.pixelSize: 28
+                        color: theme.text
+                        opacity: parent.containsMouse ? 0.5 : 0
+                        Behavior on opacity { NumberAnimation { duration: 120 } }
+                    }
+                }
+
                 Rectangle {
                     anchors.top: parent.top
                     anchors.right: parent.right
