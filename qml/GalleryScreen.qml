@@ -35,19 +35,22 @@ Item {
         return c.category.indexOf("C-") !== 0
     })
 
-    readonly property var chipModel: {
-        var items = [{ key: "all", label: I18n.tr("gallery.chipAll"), kind: "pill" }]
+    // Two separate rows rather than one Flow with an inline divider: a
+    // single Flow just wraps on width, so bonus chips could still end up
+    // sharing a visual line with main-story ones whenever there was room
+    // — a real second row is the only way to keep them apart regardless
+    // of window width.
+    readonly property var mainRowChips: {
+        var items = [{ key: "all", label: I18n.tr("gallery.chipAll") }]
         root.mainChapters.forEach(function (c) {
-            items.push({ key: c.category, label: c.number + ". " + c.title, kind: "pill" })
+            items.push({ key: c.category, label: c.number + ". " + c.title })
         })
-        if (root.bonusChapters.length > 0)
-            items.push({ key: "__bonus_divider__", label: I18n.tr("gallery.sectionBonus"), kind: "divider" })
-        root.bonusChapters.forEach(function (c) {
-            items.push({ key: c.category, label: c.title, kind: "pill" })
-        })
-        items.push({ key: "favorites", label: I18n.tr("gallery.chipFavorites"), kind: "pill" })
+        items.push({ key: "favorites", label: I18n.tr("gallery.chipFavorites") })
         return items
     }
+    readonly property var bonusRowChips: root.bonusChapters.map(function (c) {
+        return { key: c.category, label: c.title }
+    })
 
     readonly property var favoriteNumbers: favorites.map(function (f) {
         return f.strip_number
@@ -78,61 +81,62 @@ Item {
             color: theme.text
         }
 
+        // One row for "all" + main-story chapters + favorites, a
+        // separate row below for bonus chapters — see mainRowChips'/
+        // bonusRowChips' own doc comment on why this is two Flows rather
+        // than one with an inline divider.
         Flow {
             Layout.fillWidth: true
             spacing: 8
 
             Repeater {
-                model: root.chipModel
-                delegate: Item {
-                    id: chipDelegate
-                    readonly property bool isDivider: modelData.kind === "divider"
-                    height: 28
-                    width: isDivider ? dividerRow.implicitWidth : (chipLabel.implicitWidth + 24)
+                model: root.mainRowChips
+                delegate: chipDelegate
+            }
+        }
 
-                    // A plain, non-interactive section label — not a chip —
-                    // so "Bonus" reads as a group heading, not a filter of
-                    // its own.
-                    Row {
-                        id: dividerRow
-                        visible: chipDelegate.isDivider
-                        height: parent.height
-                        spacing: 8
-                        Rectangle {
-                            width: 1
-                            height: 16
-                            anchors.verticalCenter: parent.verticalCenter
-                            color: theme.line
-                        }
-                        Label {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: modelData.label
-                            font.pixelSize: 11
-                            font.capitalization: Font.AllUppercase
-                            color: theme.textFaint
-                        }
-                    }
+        Flow {
+            Layout.fillWidth: true
+            spacing: 8
+            visible: root.bonusRowChips.length > 0
 
-                    Rectangle {
-                        visible: !chipDelegate.isDivider
-                        anchors.fill: parent
-                        radius: 999
-                        color: root.selectedFilter === modelData.key ? theme.tealDim : "transparent"
-                        border.color: root.selectedFilter === modelData.key ? theme.tealDim : theme.line
-                        border.width: 1
+            Label {
+                height: 28
+                verticalAlignment: Text.AlignVCenter
+                text: I18n.tr("gallery.sectionBonus")
+                font.pixelSize: 11
+                font.capitalization: Font.AllUppercase
+                color: theme.textFaint
+            }
+            Repeater {
+                model: root.bonusRowChips
+                delegate: chipDelegate
+            }
+        }
 
-                        Label {
-                            id: chipLabel
-                            anchors.centerIn: parent
-                            text: modelData.label
-                            font.pixelSize: 12
-                            color: root.selectedFilter === modelData.key ? theme.teal : theme.textDim
-                        }
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: root.selectedFilter = modelData.key
-                        }
-                    }
+        Component {
+            id: chipDelegate
+            Rectangle {
+                id: chip
+                required property string key
+                required property string label
+                height: 28
+                width: chipLabel.implicitWidth + 24
+                radius: 999
+                color: root.selectedFilter === chip.key ? theme.tealDim : "transparent"
+                border.color: root.selectedFilter === chip.key ? theme.tealDim : theme.line
+                border.width: 1
+
+                Label {
+                    id: chipLabel
+                    anchors.centerIn: parent
+                    text: chip.label
+                    font.pixelSize: 12
+                    color: root.selectedFilter === chip.key ? theme.teal : theme.textDim
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: root.selectedFilter = chip.key
                 }
             }
         }
