@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.1](https://github.com/Aarklendoia/megatokyo/compare/v0.5.0...v0.5.1) (2026-08-24)
+
+
+### Bug Fixes
+
+* **core:** send the DeepL key as an Authorization header, not a form field ([#35](https://github.com/Aarklendoia/megatokyo/issues/35)) ([ab66ff0](https://github.com/Aarklendoia/megatokyo/commit/ab66ff044f8f28a49527b1fd1e1d4330bfd79162))
+* **daemon:** stop gating the rant backfill on an empty table ([#38](https://github.com/Aarklendoia/megatokyo/issues/38)) ([c2d6794](https://github.com/Aarklendoia/megatokyo/commit/c2d679455af6b56d26c6b365fa71502a41f126b7))
+
 ## [0.5.0](https://github.com/Aarklendoia/megatokyo/compare/v0.4.0...v0.5.0) (2026-08-24)
 
 
