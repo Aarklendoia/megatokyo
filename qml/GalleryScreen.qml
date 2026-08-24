@@ -18,12 +18,34 @@ Item {
     // "all" | "favorites" | a chapter's category string
     property string selectedFilter: "all"
 
+    // Main-story chapters are stored under category "C-<n>", including the
+    // prologue ("C-0", number 0) — see core::scraper::chapters's doc
+    // comment and ReaderScreen's own mainStoryCategories, which hit the
+    // same pitfall: filtering on `number > 0` instead of the category
+    // prefix misfiles the prologue as bonus content, since it shares
+    // number 0 with the genuinely bonus sections (One Shot Episode, Grand
+    // Theft Colo, ...). Numbered here and grouped ahead of a "Bonus"
+    // divider so the two read apart at a glance, not just by title.
+    readonly property var mainChapters: chapters.filter(function (c) {
+        return c.category.indexOf("C-") === 0
+    }).slice().sort(function (a, b) {
+        return a.number - b.number
+    })
+    readonly property var bonusChapters: chapters.filter(function (c) {
+        return c.category.indexOf("C-") !== 0
+    })
+
     readonly property var chipModel: {
-        var items = [{ key: "all", label: I18n.tr("gallery.chipAll") }]
-        chapters.forEach(function (c) {
-            items.push({ key: c.category, label: c.title })
+        var items = [{ key: "all", label: I18n.tr("gallery.chipAll"), kind: "pill" }]
+        root.mainChapters.forEach(function (c) {
+            items.push({ key: c.category, label: c.number + ". " + c.title, kind: "pill" })
         })
-        items.push({ key: "favorites", label: I18n.tr("gallery.chipFavorites") })
+        if (root.bonusChapters.length > 0)
+            items.push({ key: "__bonus_divider__", label: I18n.tr("gallery.sectionBonus"), kind: "divider" })
+        root.bonusChapters.forEach(function (c) {
+            items.push({ key: c.category, label: c.title, kind: "pill" })
+        })
+        items.push({ key: "favorites", label: I18n.tr("gallery.chipFavorites"), kind: "pill" })
         return items
     }
 
@@ -62,24 +84,54 @@ Item {
 
             Repeater {
                 model: root.chipModel
-                delegate: Rectangle {
+                delegate: Item {
+                    id: chipDelegate
+                    readonly property bool isDivider: modelData.kind === "divider"
                     height: 28
-                    width: chipLabel.implicitWidth + 24
-                    radius: 999
-                    color: root.selectedFilter === modelData.key ? theme.tealDim : "transparent"
-                    border.color: root.selectedFilter === modelData.key ? theme.tealDim : theme.line
-                    border.width: 1
+                    width: isDivider ? dividerRow.implicitWidth : (chipLabel.implicitWidth + 24)
 
-                    Label {
-                        id: chipLabel
-                        anchors.centerIn: parent
-                        text: modelData.label
-                        font.pixelSize: 12
-                        color: root.selectedFilter === modelData.key ? theme.teal : theme.textDim
+                    // A plain, non-interactive section label — not a chip —
+                    // so "Bonus" reads as a group heading, not a filter of
+                    // its own.
+                    Row {
+                        id: dividerRow
+                        visible: chipDelegate.isDivider
+                        height: parent.height
+                        spacing: 8
+                        Rectangle {
+                            width: 1
+                            height: 16
+                            anchors.verticalCenter: parent.verticalCenter
+                            color: theme.line
+                        }
+                        Label {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: modelData.label
+                            font.pixelSize: 11
+                            font.capitalization: Font.AllUppercase
+                            color: theme.textFaint
+                        }
                     }
-                    MouseArea {
+
+                    Rectangle {
+                        visible: !chipDelegate.isDivider
                         anchors.fill: parent
-                        onClicked: root.selectedFilter = modelData.key
+                        radius: 999
+                        color: root.selectedFilter === modelData.key ? theme.tealDim : "transparent"
+                        border.color: root.selectedFilter === modelData.key ? theme.tealDim : theme.line
+                        border.width: 1
+
+                        Label {
+                            id: chipLabel
+                            anchors.centerIn: parent
+                            text: modelData.label
+                            font.pixelSize: 12
+                            color: root.selectedFilter === modelData.key ? theme.teal : theme.textDim
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: root.selectedFilter = modelData.key
+                        }
                     }
                 }
             }

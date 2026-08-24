@@ -127,7 +127,15 @@ Item {
 
                 ColumnLayout {
                     id: thisDaemonColumn
-                    anchors.fill: parent
+                    // Left/right/top only, not anchors.fill: the Rectangle's
+                    // own height is derived FROM this column's
+                    // implicitHeight (below) — anchoring height too would
+                    // feed that height straight back in, which leaves a
+                    // wrapping Label's second line clipped since the
+                    // Rectangle never grows to fit it.
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
                     anchors.margins: 16
                     spacing: 10
 
@@ -292,7 +300,11 @@ Item {
 
                 ColumnLayout {
                     id: remoteColumn
-                    anchors.fill: parent
+                    // See thisDaemonColumn's own comment on why this isn't
+                    // anchors.fill.
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
                     anchors.margins: 16
                     spacing: 10
 
@@ -388,7 +400,11 @@ Item {
 
                 ColumnLayout {
                     id: notifColumn
-                    anchors.fill: parent
+                    // See thisDaemonColumn's own comment on why this isn't
+                    // anchors.fill.
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
                     anchors.margins: 16
                     spacing: 10
 

@@ -30,7 +30,8 @@
     "gallery": {
         "title": "Галерея",
         "chipAll": "Все",
-        "chipFavorites": "★ Избранное"
+        "chipFavorites": "★ Избранное",
+        "sectionBonus": "Бонус"
     },
     "rants": {
         "title": "Рассказы",

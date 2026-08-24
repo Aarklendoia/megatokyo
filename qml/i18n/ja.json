@@ -30,7 +30,8 @@
     "gallery": {
         "title": "ギャラリー",
         "chipAll": "すべて",
-        "chipFavorites": "★ お気に入り"
+        "chipFavorites": "★ お気に入り",
+        "sectionBonus": "ボーナス"
     },
     "rants": {
         "title": "ラント",

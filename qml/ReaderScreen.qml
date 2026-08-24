@@ -3,9 +3,9 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 // Reader screen: strip-by-strip navigation, "all strips" vs "main story
-// only" (chapters with a non-zero number — bonus/bonus-like sections parse
-// to category number 0, see core::scraper::chapters), favorites, and
-// quick-jump to a chapter/category or to favorites.
+// only" (chapters under category "C-<n>" — bonus sections get their own
+// short codes, see core::scraper::chapters), favorites, and quick-jump to
+// a chapter/category or to favorites.
 Item {
     id: root
 
@@ -21,8 +21,15 @@ Item {
 
     readonly property var theme: Theme {}
 
+    // Main-story chapters are stored under category "C-<n>" — including the
+    // prologue, "C-0", which is a real part of the story despite parsing to
+    // `number: 0` (see core::scraper::chapters's doc comment). Filtering on
+    // `number > 0` alone would misfile it as bonus content, along with the
+    // genuinely bonus sections (One Shot Episode, Grand Theft Colo, ...)
+    // that also parse to number 0 — category prefix is the one signal that
+    // actually distinguishes the two.
     readonly property var mainStoryCategories: chapters.filter(function (c) {
-        return c.number > 0
+        return c.category.indexOf("C-") === 0
     }).map(function (c) {
         return c.category
     })
@@ -47,11 +54,20 @@ Item {
         return f.strip_number === currentNumber
     })
 
+    // Mirrors filteredStrips' own scope: with "Main story only" active,
+    // jumping to a bonus chapter would immediately be overridden by
+    // onMainStoryOnlyChanged-style logic anyway (nothing there matches the
+    // filter) — so bonus chapters aren't offered as a jump target at all
+    // while that filter is on.
     readonly property var jumpModel: {
-        var items = chapters.map(function (c) {
+        var source = mainStoryOnly ? chapters.filter(function (c) {
+            return c.category.indexOf("C-") === 0
+        }) : chapters
+        var items = source.map(function (c) {
+            var isMainStory = c.category.indexOf("C-") === 0
             return {
                 category: c.category,
-                label: (c.number > 0 ? I18n.tr("reader.jumpChapter") + " " + c.number : I18n.tr("reader.jumpBonus")) + " — " + c.title
+                label: (isMainStory ? I18n.tr("reader.jumpChapter") + " " + c.number : I18n.tr("reader.jumpBonus")) + " — " + c.title
             }
         })
         items.push({ category: "__favorites__", label: I18n.tr("reader.jumpFavorites") })
@@ -73,6 +89,27 @@ Item {
     onCurrentNumberChanged: {
         if (currentNumber > 0)
             saveProgress(currentNumber)
+    }
+
+    // Switching "All strips" ↔ "Main story only" can leave the strip
+    // currently on screen outside the new filter (currentIndex === -1) —
+    // jump to the nearest strip at or before it that does match, rather
+    // than silently keep showing a strip the active filter excludes.
+    // Falls back to the first match if the current one comes before
+    // everything in the new list (e.g. mid-prologue bonus content).
+    onMainStoryOnlyChanged: {
+        if (currentIndex !== -1)
+            return
+        var list = filteredStrips
+        if (list.length === 0)
+            return
+        var candidate = list[0]
+        for (var i = 0; i < list.length; i++) {
+            if (list[i].number > currentNumber)
+                break
+            candidate = list[i]
+        }
+        currentNumber = candidate.number
     }
 
     ColumnLayout {
