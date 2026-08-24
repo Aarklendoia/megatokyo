@@ -3,7 +3,7 @@
         "navHome": "ホーム",
         "navReader": "リーダー",
         "navGallery": "ギャラリー",
-        "navRants": "ラント",
+        "navRants": "Rants",
         "navSettings": "設定",
         "statusBackfilling": "初回同期中…",
         "statusUpToDate": "最新"
@@ -17,7 +17,7 @@
         "readPost": "投稿を読む",
         "statsStrips": "キャッシュ済みストリップ",
         "statsFavorites": "お気に入り",
-        "statsRants": "ラント"
+        "statsRants": "Rants"
     },
     "reader": {
         "title": "リーダー",
@@ -34,7 +34,7 @@
         "sectionBonus": "ボーナス"
     },
     "rants": {
-        "title": "ラント",
+        "title": "Rants",
         "loadingTranslation": "翻訳中…"
     },
     "settings": {

@@ -3,7 +3,7 @@
         "navHome": "主页",
         "navReader": "阅读",
         "navGallery": "画廊",
-        "navRants": "闲谈",
+        "navRants": "Rants",
         "navSettings": "设置",
         "statusBackfilling": "首次同步中…",
         "statusUpToDate": "已是最新"
@@ -17,7 +17,7 @@
         "readPost": "阅读文章",
         "statsStrips": "已缓存漫画",
         "statsFavorites": "收藏",
-        "statsRants": "闲谈"
+        "statsRants": "Rants"
     },
     "reader": {
         "title": "阅读",
@@ -34,7 +34,7 @@
         "sectionBonus": "番外"
     },
     "rants": {
-        "title": "闲谈",
+        "title": "Rants",
         "loadingTranslation": "翻译中…"
     },
     "settings": {

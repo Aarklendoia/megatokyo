@@ -3,7 +3,7 @@
         "navHome": "الرئيسية",
         "navReader": "القارئ",
         "navGallery": "المعرض",
-        "navRants": "المقالات",
+        "navRants": "Rants",
         "navSettings": "الإعدادات",
         "statusBackfilling": "المزامنة الأولية…",
         "statusUpToDate": "محدّث"
@@ -34,7 +34,7 @@
         "sectionBonus": "إضافي"
     },
     "rants": {
-        "title": "المقالات",
+        "title": "Rants",
         "loadingTranslation": "جارٍ الترجمة…"
     },
     "settings": {

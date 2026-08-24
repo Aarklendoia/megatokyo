@@ -3,7 +3,7 @@
         "navHome": "होम",
         "navReader": "रीडर",
         "navGallery": "गैलरी",
-        "navRants": "रैंट्स",
+        "navRants": "Rants",
         "navSettings": "सेटिंग्स",
         "statusBackfilling": "प्रारंभिक सिंक हो रहा है…",
         "statusUpToDate": "अद्यतन"
@@ -17,7 +17,7 @@
         "readPost": "पोस्ट पढ़ें",
         "statsStrips": "कैश की गई स्ट्रिप्स",
         "statsFavorites": "पसंदीदा",
-        "statsRants": "रैंट्स"
+        "statsRants": "Rants"
     },
     "reader": {
         "title": "रीडर",
@@ -34,7 +34,7 @@
         "sectionBonus": "बोनस"
     },
     "rants": {
-        "title": "रैंट्स",
+        "title": "Rants",
         "loadingTranslation": "अनुवाद हो रहा है…"
     },
     "settings": {
