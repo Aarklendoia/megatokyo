@@ -4,6 +4,7 @@
         "navReader": "Чтение",
         "navGallery": "Галерея",
         "navRants": "Рассказы",
+        "navSettings": "Настройки",
         "statusBackfilling": "Первичная синхронизация…",
         "statusUpToDate": "Актуально"
     },
@@ -34,5 +35,24 @@
     "rants": {
         "title": "Рассказы",
         "loadingTranslation": "Перевод…"
+    },
+    "settings": {
+        "title": "Настройки",
+        "thisDaemonTitle": "ЭТОТ СЕРВЕР",
+        "thisDaemonHint": "Скопируйте этот URL и токен в раздел «Удалённый сервер» на другом устройстве, чтобы подключить его к тому же серверу.",
+        "copy": "Копировать",
+        "daemonPollIntervalLabel": "Интервал проверки (мин)",
+        "deeplKeyLabel": "Ключ API DeepL",
+        "deeplKeyPlaceholder": "Вставьте ключ API DeepL",
+        "save": "Сохранить",
+        "saved": "Сохранено",
+        "saveFailed": "Не удалось сохранить",
+        "remoteTitle": "ПОДКЛЮЧИТЬСЯ К УДАЛЁННОМУ СЕРВЕРУ",
+        "remoteHint": "Оставьте оба поля пустыми, чтобы использовать сервер на этом устройстве.",
+        "remoteUrlPlaceholder": "https://megatokyo.example.com",
+        "remoteTokenPlaceholder": "Токен API",
+        "notificationsTitle": "УВЕДОМЛЕНИЯ",
+        "notificationsToggle": "Уведомлять о новых выпусках и записях",
+        "notificationsPollIntervalLabel": "Проверять каждые (мин)"
     }
 }

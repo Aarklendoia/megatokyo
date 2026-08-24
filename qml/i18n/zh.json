@@ -4,6 +4,7 @@
         "navReader": "阅读",
         "navGallery": "画廊",
         "navRants": "闲谈",
+        "navSettings": "设置",
         "statusBackfilling": "首次同步中…",
         "statusUpToDate": "已是最新"
     },
@@ -34,5 +35,24 @@
     "rants": {
         "title": "闲谈",
         "loadingTranslation": "翻译中…"
+    },
+    "settings": {
+        "title": "设置",
+        "thisDaemonTitle": "本机守护进程",
+        "thisDaemonHint": "将此URL和令牌复制到另一台设备的“远程守护进程”部分,以连接到同一个守护进程。",
+        "copy": "复制",
+        "daemonPollIntervalLabel": "检查间隔(分钟)",
+        "deeplKeyLabel": "DeepL API 密钥",
+        "deeplKeyPlaceholder": "粘贴你的 DeepL API 密钥",
+        "save": "保存",
+        "saved": "已保存",
+        "saveFailed": "保存失败",
+        "remoteTitle": "连接到远程守护进程",
+        "remoteHint": "两个字段都留空则使用本机的守护进程。",
+        "remoteUrlPlaceholder": "https://megatokyo.example.com",
+        "remoteTokenPlaceholder": "API 令牌",
+        "notificationsTitle": "通知",
+        "notificationsToggle": "有新漫画和闲谈时通知我",
+        "notificationsPollIntervalLabel": "检查间隔(分钟)"
     }
 }

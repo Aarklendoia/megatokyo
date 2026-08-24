@@ -2,13 +2,14 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
-// Shell: sidebar nav + the four screens reviewed with the user before this
-// was built (Home/Reader/Gallery/Rants — Settings' remote-config
-// persistence is a separate follow-up, see the project's issues). QML talks
-// to the daemon directly over its HTTP API (local or remote, see
-// gui::daemon_link), so there's nothing here for a local control server to
-// answer — base_url/token just come in as positional arguments from
-// gui::launcher.
+// Shell: sidebar nav + the five screens reviewed with the user before this
+// was built (Home/Reader/Gallery/Rants/Settings). QML talks to the daemon
+// directly over its HTTP API (local or remote, see gui::daemon_link) for
+// everything but this GUI's own config — base_url/token/guiRuntimeDir come
+// in as positional arguments from gui::launcher, the latter pointing at the
+// discovery files for gui::control's local control server (see
+// loadGuiCtrl below), which Settings uses to write this GUI's own
+// remote-daemon/notifications config back to disk.
 ApplicationWindow {
     id: window
     visible: true
@@ -18,8 +19,15 @@ ApplicationWindow {
     minimumHeight: 480
     title: "Megatokyo"
 
-    property string baseUrl: Qt.application.arguments.length > 1 ? Qt.application.arguments[Qt.application.arguments.length - 2] : ""
-    property string apiToken: Qt.application.arguments.length > 1 ? Qt.application.arguments[Qt.application.arguments.length - 1] : ""
+    // gui::launcher passes base_url/token/runtime_dir as the last three
+    // positional arguments — runtime_dir is where the local control
+    // server's port/token discovery files live (see loadGuiCtrl below and
+    // gui::control's own doc comment).
+    property string baseUrl: Qt.application.arguments.length > 2 ? Qt.application.arguments[Qt.application.arguments.length - 3] : ""
+    property string apiToken: Qt.application.arguments.length > 2 ? Qt.application.arguments[Qt.application.arguments.length - 2] : ""
+    property string guiRuntimeDir: Qt.application.arguments.length > 2 ? Qt.application.arguments[Qt.application.arguments.length - 1] : ""
+    property string guiCtrlPort: ""
+    property string guiCtrlToken: ""
 
     property var chapters: []
     property var strips: []
@@ -34,6 +42,32 @@ ApplicationWindow {
         id: api
         baseUrl: window.baseUrl
         token: window.apiToken
+    }
+
+    GuiCtrlApi {
+        id: guiCtrlApi
+        baseUrl: "http://127.0.0.1:" + window.guiCtrlPort
+        token: window.guiCtrlToken
+    }
+
+    // Synchronous, one-shot reads of the two discovery files
+    // gui::launcher::run writes before spawning qml6 — same pattern as
+    // kio-protondrive-wizard's own control-server discovery. Must happen
+    // before guiCtrlApi is used for anything.
+    function loadGuiCtrl() {
+        if (window.guiRuntimeDir === "")
+            return
+        var portXhr = new XMLHttpRequest()
+        portXhr.open("GET", "file://" + window.guiRuntimeDir + "/megatokyo-gui-ctrl.port", false)
+        portXhr.send()
+        if (portXhr.responseText !== "")
+            window.guiCtrlPort = portXhr.responseText.trim()
+
+        var tokenXhr = new XMLHttpRequest()
+        tokenXhr.open("GET", "file://" + window.guiRuntimeDir + "/megatokyo-gui-ctrl.token", false)
+        tokenXhr.send()
+        if (tokenXhr.responseText !== "")
+            window.guiCtrlToken = tokenXhr.responseText.trim()
     }
 
     function refreshChapters() {
@@ -91,7 +125,10 @@ ApplicationWindow {
         nav.currentIndex = 3
     }
 
-    Component.onCompleted: refreshAll()
+    Component.onCompleted: {
+        loadGuiCtrl()
+        refreshAll()
+    }
 
     background: Rectangle { color: theme.ink }
 
@@ -113,7 +150,7 @@ ApplicationWindow {
                 Repeater {
                     id: nav
                     property int currentIndex: 0
-                    model: [I18n.tr("app.navHome"), I18n.tr("app.navReader"), I18n.tr("app.navGallery"), I18n.tr("app.navRants")]
+                    model: [I18n.tr("app.navHome"), I18n.tr("app.navReader"), I18n.tr("app.navGallery"), I18n.tr("app.navRants"), I18n.tr("app.navSettings")]
                     delegate: Rectangle {
                         Layout.fillWidth: true
                         height: 36
@@ -186,6 +223,13 @@ ApplicationWindow {
                 id: rantsScreen
                 api: api
                 rants: window.rants
+            }
+
+            SettingsScreen {
+                api: api
+                guiCtrlApi: guiCtrlApi
+                localBaseUrl: window.baseUrl
+                localToken: window.apiToken
             }
         }
     }

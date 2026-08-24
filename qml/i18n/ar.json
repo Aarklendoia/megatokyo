@@ -4,6 +4,7 @@
         "navReader": "القارئ",
         "navGallery": "المعرض",
         "navRants": "المقالات",
+        "navSettings": "الإعدادات",
         "statusBackfilling": "المزامنة الأولية…",
         "statusUpToDate": "محدّث"
     },
@@ -34,5 +35,24 @@
     "rants": {
         "title": "المقالات",
         "loadingTranslation": "جارٍ الترجمة…"
+    },
+    "settings": {
+        "title": "الإعدادات",
+        "thisDaemonTitle": "هذه الخدمة",
+        "thisDaemonHint": "انسخ هذا الرابط والرمز إلى قسم «خدمة بعيدة» في جهاز آخر لربطه بنفس الخدمة.",
+        "copy": "نسخ",
+        "daemonPollIntervalLabel": "فاصل التحقق (دقيقة)",
+        "deeplKeyLabel": "مفتاح API الخاص بـ DeepL",
+        "deeplKeyPlaceholder": "الصق مفتاح API الخاص بـ DeepL",
+        "save": "حفظ",
+        "saved": "تم الحفظ",
+        "saveFailed": "تعذّر الحفظ",
+        "remoteTitle": "الاتصال بخدمة بعيدة",
+        "remoteHint": "اترك كلا الحقلين فارغين لاستخدام الخدمة على هذا الجهاز.",
+        "remoteUrlPlaceholder": "https://megatokyo.example.com",
+        "remoteTokenPlaceholder": "رمز API",
+        "notificationsTitle": "الإشعارات",
+        "notificationsToggle": "إشعاري بالأشرطة والمقالات الجديدة",
+        "notificationsPollIntervalLabel": "التحقق كل (دقيقة)"
     }
 }

@@ -13,6 +13,7 @@
 use std::path::PathBuf;
 use std::time::Duration;
 
+use crate::config::{gui_config_path, GuiConfig};
 use crate::daemon_link::{self, DaemonLink};
 use crate::notification::Notifier;
 
@@ -96,16 +97,17 @@ fn fetch_status(
     })
 }
 
-/// Takes the already-resolved [`DaemonLink`] as a parameter rather than
-/// calling [`daemon_link::resolve`] itself, so tests can point this at a
-/// mock server directly instead of going through `$XDG_CONFIG_HOME` (a
-/// process-global that parallel `cargo test` runs can't safely mutate per
-/// test).
+/// Takes the already-resolved [`DaemonLink`] and `notifications_enabled` as
+/// parameters rather than resolving them itself, so tests can supply both
+/// directly instead of going through `$XDG_CONFIG_HOME` (a process-global
+/// that parallel `cargo test` runs can't safely mutate per test) — see
+/// [`run`] for where each is actually read, fresh, every tick.
 fn tick(
     client: &reqwest::blocking::Client,
     link: &DaemonLink,
     notifier: &dyn Notifier,
     state_path: &std::path::Path,
+    notifications_enabled: bool,
 ) {
     let status = match fetch_status(client, link) {
         Ok(status) => status,
@@ -116,10 +118,13 @@ fn tick(
     };
 
     let previous = LastSeen::load(state_path);
-    if is_new(previous.last_strip_number, status.last_strip_number) {
+    // State is still tracked either way, notifications_enabled or not —
+    // flipping the toggle back on shouldn't cause a backlog of "new"
+    // numbers that actually arrived while it was off.
+    if notifications_enabled && is_new(previous.last_strip_number, status.last_strip_number) {
         notifier.new_strip(status.last_strip_number);
     }
-    if is_new(previous.last_rant_number, status.last_rant_number) {
+    if notifications_enabled && is_new(previous.last_rant_number, status.last_rant_number) {
         notifier.new_rant(status.last_rant_number);
     }
 
@@ -137,8 +142,13 @@ pub fn run(notifier: &dyn Notifier, interval: Duration) {
         .expect("building the HTTP client should never fail with no custom TLS config");
     let path = state_path();
     loop {
+        // Read fresh every tick (a plain file read, cheap compared to the
+        // /status request in tick()) so toggling the Settings screen's
+        // notifications switch takes effect on the very next tick, not
+        // just after a restart.
+        let notifications_enabled = GuiConfig::load(&gui_config_path()).notifications_enabled;
         match daemon_link::resolve() {
-            Some(link) => tick(&client, &link, notifier, &path),
+            Some(link) => tick(&client, &link, notifier, &path, notifications_enabled),
             None => log::warn!("no daemon available to poll"),
         }
         std::thread::sleep(interval);
@@ -226,10 +236,57 @@ mod tests {
 
         let notifier = RecordingNotifier::default();
         let client = reqwest::blocking::Client::new();
-        tick(&client, &link, &notifier, &state_path);
+        tick(&client, &link, &notifier, &state_path, true);
 
         assert_eq!(*notifier.strips.borrow(), vec![1619]);
         assert_eq!(*notifier.rants.borrow(), Vec::<i32>::new());
+        assert_eq!(
+            LastSeen::load(&state_path),
+            LastSeen {
+                last_strip_number: Some(1619),
+                last_rant_number: Some(1107),
+            }
+        );
+    }
+
+    #[test]
+    fn tick_tracks_state_but_stays_silent_when_notifications_are_disabled() {
+        use wiremock::matchers::{method, path as path_matcher};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
+
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let server = rt.block_on(async {
+            let server = MockServer::start().await;
+            Mock::given(method("GET"))
+                .and(path_matcher("/status"))
+                .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                    "last_check": null, "last_strip_number": 1619, "last_rant_number": 1107, "backfilling": false
+                })))
+                .mount(&server)
+                .await;
+            server
+        });
+        let link = DaemonLink {
+            base_url: server.uri(),
+            token: "test-token".to_string(),
+        };
+
+        let dir = tempfile::tempdir().unwrap();
+        let state_path = dir.path().join("last_seen.toml");
+        LastSeen {
+            last_strip_number: Some(1618),
+            last_rant_number: Some(1106),
+        }
+        .save(&state_path);
+
+        let notifier = RecordingNotifier::default();
+        let client = reqwest::blocking::Client::new();
+        tick(&client, &link, &notifier, &state_path, false);
+
+        assert_eq!(*notifier.strips.borrow(), Vec::<i32>::new());
+        assert_eq!(*notifier.rants.borrow(), Vec::<i32>::new());
+        // State still advances even while silenced, so re-enabling later
+        // doesn't dump a backlog of now-stale "new" numbers.
         assert_eq!(
             LastSeen::load(&state_path),
             LastSeen {

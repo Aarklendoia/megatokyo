@@ -4,6 +4,7 @@
         "navReader": "Reader",
         "navGallery": "Gallery",
         "navRants": "Rants",
+        "navSettings": "Settings",
         "statusBackfilling": "Initial sync…",
         "statusUpToDate": "Up to date"
     },
@@ -34,5 +35,24 @@
     "rants": {
         "title": "Rants",
         "loadingTranslation": "Translating…"
+    },
+    "settings": {
+        "title": "Settings",
+        "thisDaemonTitle": "THIS DAEMON",
+        "thisDaemonHint": "Copy this URL and token into another device's \"Remote daemon\" section below to connect it to the same daemon.",
+        "copy": "Copy",
+        "daemonPollIntervalLabel": "Check interval (min)",
+        "deeplKeyLabel": "DeepL API key",
+        "deeplKeyPlaceholder": "Paste your DeepL API key",
+        "save": "Save",
+        "saved": "Saved",
+        "saveFailed": "Could not save",
+        "remoteTitle": "CONNECT TO A REMOTE DAEMON",
+        "remoteHint": "Leave both fields empty to use the daemon on this machine instead.",
+        "remoteUrlPlaceholder": "https://megatokyo.example.com",
+        "remoteTokenPlaceholder": "API token",
+        "notificationsTitle": "NOTIFICATIONS",
+        "notificationsToggle": "Notify me about new strips and rants",
+        "notificationsPollIntervalLabel": "Check every (min)"
     }
 }

@@ -4,6 +4,7 @@
         "navReader": "Lecture",
         "navGallery": "Galerie",
         "navRants": "Rants",
+        "navSettings": "Réglages",
         "statusBackfilling": "Synchronisation initiale…",
         "statusUpToDate": "À jour"
     },
@@ -34,5 +35,24 @@
     "rants": {
         "title": "Rants",
         "loadingTranslation": "Traduction en cours…"
+    },
+    "settings": {
+        "title": "Réglages",
+        "thisDaemonTitle": "CE DÉMON",
+        "thisDaemonHint": "Copiez cette URL et ce jeton dans la section « Démon distant » d'un autre appareil pour le connecter au même démon.",
+        "copy": "Copier",
+        "daemonPollIntervalLabel": "Intervalle de vérification (min)",
+        "deeplKeyLabel": "Clé API DeepL",
+        "deeplKeyPlaceholder": "Collez votre clé API DeepL",
+        "save": "Enregistrer",
+        "saved": "Enregistré",
+        "saveFailed": "Échec de l'enregistrement",
+        "remoteTitle": "SE CONNECTER À UN DÉMON DISTANT",
+        "remoteHint": "Laissez les deux champs vides pour utiliser le démon de cette machine.",
+        "remoteUrlPlaceholder": "https://megatokyo.exemple.com",
+        "remoteTokenPlaceholder": "Jeton API",
+        "notificationsTitle": "NOTIFICATIONS",
+        "notificationsToggle": "Me notifier des nouvelles planches et rants",
+        "notificationsPollIntervalLabel": "Vérifier toutes les (min)"
     }
 }

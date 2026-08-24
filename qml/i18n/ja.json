@@ -4,6 +4,7 @@
         "navReader": "リーダー",
         "navGallery": "ギャラリー",
         "navRants": "ラント",
+        "navSettings": "設定",
         "statusBackfilling": "初回同期中…",
         "statusUpToDate": "最新"
     },
@@ -34,5 +35,24 @@
     "rants": {
         "title": "ラント",
         "loadingTranslation": "翻訳中…"
+    },
+    "settings": {
+        "title": "設定",
+        "thisDaemonTitle": "このデーモン",
+        "thisDaemonHint": "このURLとトークンを別のデバイスの「リモートデーモン」セクションにコピーすると、同じデーモンに接続できます。",
+        "copy": "コピー",
+        "daemonPollIntervalLabel": "確認間隔(分)",
+        "deeplKeyLabel": "DeepL APIキー",
+        "deeplKeyPlaceholder": "DeepL APIキーを貼り付け",
+        "save": "保存",
+        "saved": "保存しました",
+        "saveFailed": "保存できませんでした",
+        "remoteTitle": "リモートデーモンに接続",
+        "remoteHint": "両方の項目を空にすると、このマシンのデーモンを使用します。",
+        "remoteUrlPlaceholder": "https://megatokyo.example.com",
+        "remoteTokenPlaceholder": "APIトークン",
+        "notificationsTitle": "通知",
+        "notificationsToggle": "新しいストリップとラントを通知する",
+        "notificationsPollIntervalLabel": "確認間隔(分)"
     }
 }
