@@ -58,6 +58,7 @@ override_dh_auto_install:
 
 	mkdir -p $(CURDIR)/debian/tmp/usr/lib/systemd/user
 	cp $(CURDIR)/debian/megatokyo-daemon.user.service $(CURDIR)/debian/tmp/usr/lib/systemd/user/megatokyo-daemon.service
+	cp $(CURDIR)/debian/megatokyo-gui-background.user.service $(CURDIR)/debian/tmp/usr/lib/systemd/user/megatokyo-gui-background.service
 
 override_dh_install:
 	dh_install
