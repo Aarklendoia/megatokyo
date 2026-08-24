@@ -3,7 +3,7 @@ resolver = "2"
 members = ["core", "daemon", "gui"]
 
 [workspace.package]
-version = "0.5.1"
+version = "0.6.0"
 edition = "2021"
 authors = ["Édouard Biton"]
 license = "GPL-3.0-or-later"
