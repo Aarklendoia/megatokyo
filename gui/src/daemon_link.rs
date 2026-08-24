@@ -19,19 +19,6 @@ pub struct DaemonLink {
     pub token: String,
 }
 
-/// This binary's own config: `$XDG_CONFIG_HOME/megatokyo-gui/config.toml`.
-/// Only meaningful field right now is an optional remote daemon override —
-/// `remote_base_url`/`remote_api_token` both non-empty means "don't manage
-/// a local daemon at all, just use this one".
-fn gui_config_path() -> PathBuf {
-    let config_home = std::env::var_os("XDG_CONFIG_HOME")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| {
-            PathBuf::from(std::env::var_os("HOME").unwrap_or_default()).join(".config")
-        });
-    config_home.join("megatokyo-gui").join("config.toml")
-}
-
 /// Same path `megatokyo-daemon`'s own `config::Config::default_path()`
 /// resolves to — duplicated rather than shared via a dependency, since
 /// pulling in the daemon crate (or a config-parsing dependency) just for
@@ -67,7 +54,7 @@ fn read_toml_string_field(contents: &str, key: &str) -> Option<String> {
 /// `megatokyo-daemon`'s `config::default_poll_interval_minutes`) since
 /// there's rarely a reason for the two to disagree.
 pub fn poll_interval_minutes() -> u64 {
-    std::fs::read_to_string(gui_config_path())
+    std::fs::read_to_string(crate::config::gui_config_path())
         .ok()
         .and_then(|contents| {
             contents.lines().find_map(|line| {
@@ -83,7 +70,7 @@ pub fn poll_interval_minutes() -> u64 {
 
 /// Reads this GUI's own config, if a remote daemon override is set there.
 fn configured_remote() -> Option<DaemonLink> {
-    let contents = std::fs::read_to_string(gui_config_path()).ok()?;
+    let contents = std::fs::read_to_string(crate::config::gui_config_path()).ok()?;
     let base_url = read_toml_string_field(&contents, "remote_base_url")?;
     let token = read_toml_string_field(&contents, "remote_api_token")?;
     (!base_url.is_empty() && !token.is_empty()).then_some(DaemonLink { base_url, token })

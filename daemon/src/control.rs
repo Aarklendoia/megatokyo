@@ -7,6 +7,7 @@
 //! header to match [`AppState::token`].
 
 use std::net::SocketAddr;
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
@@ -19,13 +20,24 @@ use megatokyo_core::translate::{get_translated_rant, Translator};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
+use crate::config::Config;
+
 const TOKEN_HEADER: &str = "x-megatokyo-daemon-token";
 
 pub struct AppState {
     pub store: Store,
     pub image_cache: ImageCache,
-    pub translator: Option<Translator>,
     pub token: String,
+    /// `deepl_api_key`/`poll_interval_minutes` are editable via `GET`/`POST
+    /// /config` (the Settings screen's "this daemon" section) — `bind` and
+    /// `api_token` are part of the same on-disk file but never touched by
+    /// that route, so nothing here bothers gating access to just those two
+    /// fields. A `Translator` is built fresh from `deepl_api_key` wherever
+    /// one is needed instead of being cached on `AppState`, so a key change
+    /// here takes effect on the very next translated-rant request with no
+    /// extra invalidation logic.
+    pub config: tokio::sync::RwLock<Config>,
+    pub config_path: PathBuf,
     /// Set while the initial archive backfill (or a `/check`-triggered
     /// cycle) is running — surfaced on `/status` so a client can tell "no
     /// content yet" apart from "still loading".
@@ -180,6 +192,7 @@ async fn route(req: &str, path: &str, state: &AppState) -> Response {
             state.check_requested.notify_one();
             Response::ok_json(&serde_json::json!({"ok": true}))
         }
+        "/config" => route_config(req, state).await,
         _ => Response::not_found(),
     }
 }
@@ -219,11 +232,17 @@ async fn route_rant(req: &str, state: &AppState) -> Response {
     let content = if lang.is_empty() || lang.eq_ignore_ascii_case("en") {
         rant.content.clone()
     } else {
-        let translated = match &state.translator {
-            Some(translator) => get_translated_rant(&state.store, translator, number, &lang)
+        // Built fresh from the current config rather than cached on
+        // AppState, so a key change via POST /config takes effect on the
+        // very next request — see AppState's own doc comment.
+        let deepl_api_key = state.config.read().await.deepl_api_key.clone();
+        let translated = if deepl_api_key.is_empty() {
+            Err("no DeepL API key configured".to_string())
+        } else {
+            let translator = Translator::new(deepl_api_key);
+            get_translated_rant(&state.store, &translator, number, &lang)
                 .await
-                .map_err(|e| e.to_string()),
-            None => Err("no DeepL API key configured".to_string()),
+                .map_err(|e| e.to_string())
         };
         match translated {
             // `rant` above already confirmed this number exists, so
@@ -343,17 +362,72 @@ fn route_progress(req: &str, state: &AppState) -> Response {
     }
 }
 
+/// `GET`/`POST` for the Settings screen's "this daemon" section —
+/// `deepl_api_key` and `poll_interval_minutes` only, see `AppState::config`'s
+/// doc comment for why `bind`/`api_token` are deliberately not reachable
+/// here. `POST` applies whichever query params are present (each field can
+/// be updated independently) and persists the full config back to disk
+/// immediately.
+async fn route_config(req: &str, state: &AppState) -> Response {
+    match request_method(req) {
+        "GET" => {
+            let config = state.config.read().await;
+            Response::ok_json(&serde_json::json!({
+                "deepl_api_key": config.deepl_api_key,
+                "poll_interval_minutes": config.poll_interval_minutes,
+            }))
+        }
+        "POST" => {
+            let mut config = state.config.write().await;
+            if let Some(key) = extract_query_param(req, "deepl_api_key") {
+                config.deepl_api_key = key;
+            }
+            if let Some(minutes) = extract_query_param(req, "poll_interval_minutes") {
+                match minutes.parse::<u64>() {
+                    Ok(m) if m > 0 => config.poll_interval_minutes = m,
+                    _ => {
+                        return Response::bad_request(
+                            "poll_interval_minutes must be a positive integer",
+                        )
+                    }
+                }
+            }
+            match config.save(&state.config_path) {
+                Ok(()) => Response::ok_json(&serde_json::json!({
+                    "deepl_api_key": config.deepl_api_key,
+                    "poll_interval_minutes": config.poll_interval_minutes,
+                })),
+                Err(err) => Response::server_error(&err.to_string()),
+            }
+        }
+        _ => Response::not_found(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use megatokyo_core::domain::{Chapter, Rant};
 
+    fn test_config() -> Config {
+        Config {
+            bind: "127.0.0.1:0".to_string(),
+            api_token: "test-token".to_string(),
+            deepl_api_key: String::new(),
+            poll_interval_minutes: 15,
+        }
+    }
+
+    /// Placeholder path: fine for every test except the ones exercising
+    /// `POST /config`'s persistence, which build their own `AppState` with a
+    /// real tempdir instead of using this shared helper.
     fn state() -> AppState {
         AppState {
             store: Store::open_in_memory().unwrap(),
             image_cache: ImageCache::new(std::env::temp_dir()),
-            translator: None,
             token: "test-token".to_string(),
+            config: tokio::sync::RwLock::new(test_config()),
+            config_path: std::env::temp_dir().join("megatokyo-test-unused-config.toml"),
             backfilling: AtomicBool::new(false),
             check_requested: tokio::sync::Notify::new(),
         }
@@ -530,5 +604,74 @@ mod tests {
         let state = state();
         let response = route("GET /nope HTTP/1.1\r\n", "/nope", &state).await;
         assert_eq!(response.status, "404 Not Found");
+    }
+
+    #[tokio::test]
+    async fn config_route_reports_the_current_settings() {
+        let state = state();
+        let response = route("GET /config HTTP/1.1\r\n", "/config", &state).await;
+        assert_eq!(response.status, "200 OK");
+        let body: serde_json::Value = serde_json::from_slice(&response.body).unwrap();
+        assert_eq!(body["deepl_api_key"], "");
+        assert_eq!(body["poll_interval_minutes"], 15);
+    }
+
+    fn state_with_persisted_config(dir: &std::path::Path) -> AppState {
+        let config_path = dir.join("config.toml");
+        AppState {
+            store: Store::open_in_memory().unwrap(),
+            image_cache: ImageCache::new(std::env::temp_dir()),
+            token: "test-token".to_string(),
+            config: tokio::sync::RwLock::new(test_config()),
+            config_path,
+            backfilling: AtomicBool::new(false),
+            check_requested: tokio::sync::Notify::new(),
+        }
+    }
+
+    #[tokio::test]
+    async fn config_route_post_updates_only_the_given_fields_and_persists_them() {
+        let dir = tempfile::tempdir().unwrap();
+        let state = state_with_persisted_config(dir.path());
+
+        let response = route(
+            "POST /config?deepl_api_key=secret-key HTTP/1.1\r\n",
+            "/config",
+            &state,
+        )
+        .await;
+        assert_eq!(response.status, "200 OK");
+        let body: serde_json::Value = serde_json::from_slice(&response.body).unwrap();
+        assert_eq!(body["deepl_api_key"], "secret-key");
+        // Untouched by this call, still whatever it was before.
+        assert_eq!(body["poll_interval_minutes"], 15);
+
+        let saved = std::fs::read_to_string(&state.config_path).unwrap();
+        assert!(saved.contains("secret-key"));
+
+        let response = route(
+            "POST /config?poll_interval_minutes=30 HTTP/1.1\r\n",
+            "/config",
+            &state,
+        )
+        .await;
+        let body: serde_json::Value = serde_json::from_slice(&response.body).unwrap();
+        // The key set by the previous call is still there — a partial
+        // update never clobbers fields it wasn't given.
+        assert_eq!(body["deepl_api_key"], "secret-key");
+        assert_eq!(body["poll_interval_minutes"], 30);
+    }
+
+    #[tokio::test]
+    async fn config_route_post_rejects_a_non_positive_poll_interval() {
+        let dir = tempfile::tempdir().unwrap();
+        let state = state_with_persisted_config(dir.path());
+        let response = route(
+            "POST /config?poll_interval_minutes=0 HTTP/1.1\r\n",
+            "/config",
+            &state,
+        )
+        .await;
+        assert_eq!(response.status, "400 Bad Request");
     }
 }

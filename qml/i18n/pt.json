@@ -4,6 +4,7 @@
         "navReader": "Leitor",
         "navGallery": "Galeria",
         "navRants": "Rants",
+        "navSettings": "Definições",
         "statusBackfilling": "Sincronização inicial…",
         "statusUpToDate": "Atualizado"
     },
@@ -34,5 +35,24 @@
     "rants": {
         "title": "Rants",
         "loadingTranslation": "Traduzindo…"
+    },
+    "settings": {
+        "title": "Definições",
+        "thisDaemonTitle": "ESTE DAEMON",
+        "thisDaemonHint": "Copie este URL e token para a secção «Daemon remoto» de outro dispositivo para ligá-lo ao mesmo daemon.",
+        "copy": "Copiar",
+        "daemonPollIntervalLabel": "Intervalo de verificação (min)",
+        "deeplKeyLabel": "Chave da API DeepL",
+        "deeplKeyPlaceholder": "Cole a sua chave da API DeepL",
+        "save": "Guardar",
+        "saved": "Guardado",
+        "saveFailed": "Não foi possível guardar",
+        "remoteTitle": "LIGAR A UM DAEMON REMOTO",
+        "remoteHint": "Deixe ambos os campos vazios para usar o daemon desta máquina.",
+        "remoteUrlPlaceholder": "https://megatokyo.exemplo.com",
+        "remoteTokenPlaceholder": "Token de API",
+        "notificationsTitle": "NOTIFICAÇÕES",
+        "notificationsToggle": "Notificar-me sobre novas tiras e rants",
+        "notificationsPollIntervalLabel": "Verificar a cada (min)"
     }
 }

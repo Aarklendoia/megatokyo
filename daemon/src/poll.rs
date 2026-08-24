@@ -34,17 +34,16 @@ pub async fn run_once(client: &reqwest::Client, state: &AppState) {
     }
 }
 
-/// Runs [`run_once`] immediately, then again every `interval`, and
-/// immediately whenever `state.check_requested` is notified (`POST
-/// /check`) — whichever comes first. A `poll_in_progress` guard (mirroring
-/// the original's `_workInProgress` flag) means an in-flight cycle just
-/// keeps running rather than being interrupted or double-started by an
-/// overlapping trigger.
-pub async fn run_loop(
-    client: reqwest::Client,
-    state: Arc<AppState>,
-    interval: std::time::Duration,
-) {
+/// Runs [`run_once`] immediately, then again every
+/// `state.config`'s `poll_interval_minutes` (re-read fresh each time round
+/// the loop, so a change made via `POST /config` takes effect on the very
+/// next sleep rather than needing a restart), and immediately whenever
+/// `state.check_requested` is notified (`POST /check`) — whichever comes
+/// first. A `poll_in_progress` guard (mirroring the original's
+/// `_workInProgress` flag) means an in-flight cycle just keeps running
+/// rather than being interrupted or double-started by an overlapping
+/// trigger.
+pub async fn run_loop(client: reqwest::Client, state: Arc<AppState>) {
     let poll_in_progress = AtomicBool::new(false);
     loop {
         if poll_in_progress
@@ -54,6 +53,8 @@ pub async fn run_loop(
             run_once(&client, &state).await;
             poll_in_progress.store(false, Ordering::SeqCst);
         }
+        let interval =
+            std::time::Duration::from_secs(state.config.read().await.poll_interval_minutes * 60);
         tokio::select! {
             _ = tokio::time::sleep(interval) => {}
             _ = state.check_requested.notified() => {}

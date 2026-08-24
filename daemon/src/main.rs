@@ -7,7 +7,6 @@ use std::sync::Arc;
 
 use megatokyo_core::image_cache::ImageCache;
 use megatokyo_core::store::Store;
-use megatokyo_core::translate::Translator;
 
 use config::Config;
 use control::AppState;
@@ -35,17 +34,6 @@ async fn main() {
     };
 
     let image_cache = ImageCache::new(ImageCache::default_cache_dir());
-    let translator =
-        (!config.deepl_api_key.is_empty()).then(|| Translator::new(config.deepl_api_key.clone()));
-
-    let state = Arc::new(AppState {
-        store,
-        image_cache,
-        translator,
-        token: config.api_token.clone(),
-        backfilling: AtomicBool::new(false),
-        check_requested: tokio::sync::Notify::new(),
-    });
 
     let bind: std::net::SocketAddr = match config.bind.parse() {
         Ok(addr) => addr,
@@ -55,12 +43,21 @@ async fn main() {
         }
     };
 
+    let state = Arc::new(AppState {
+        store,
+        image_cache,
+        token: config.api_token.clone(),
+        config: tokio::sync::RwLock::new(config),
+        config_path,
+        backfilling: AtomicBool::new(false),
+        check_requested: tokio::sync::Notify::new(),
+    });
+
     let client = reqwest::Client::new();
     let poll_state = state.clone();
     let poll_client = client.clone();
-    let poll_interval = std::time::Duration::from_secs(config.poll_interval_minutes * 60);
     tokio::spawn(async move {
-        poll::run_loop(poll_client, poll_state, poll_interval).await;
+        poll::run_loop(poll_client, poll_state).await;
     });
 
     if let Err(err) = control::serve(bind, state).await {

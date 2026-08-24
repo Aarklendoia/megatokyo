@@ -9,7 +9,7 @@ use std::path::PathBuf;
 use std::process::Command;
 use std::thread;
 
-use megatokyo_core::local_ctrl::{runtime_dir, write_owner_only_file};
+use megatokyo_core::local_ctrl::{generate_ctrl_token, runtime_dir, write_owner_only_file};
 
 use crate::daemon_link::DaemonLink;
 
@@ -53,7 +53,8 @@ fn find_qml_path() -> PathBuf {
 
 pub fn run(link: &DaemonLink) -> std::process::ExitCode {
     let uid = crate::daemon_link::current_uid();
-    let lock_path = runtime_dir(uid).join("megatokyo-gui.lock");
+    let runtime_dir_path = runtime_dir(uid);
+    let lock_path = runtime_dir_path.join("megatokyo-gui.lock");
     if !acquire_single_instance_lock(&lock_path) {
         eprintln!("Megatokyo is already open.");
         return std::process::ExitCode::SUCCESS;
@@ -68,6 +69,21 @@ pub fn run(link: &DaemonLink) -> std::process::ExitCode {
         return std::process::ExitCode::FAILURE;
     }
 
+    // Local control server for the Settings screen's write-back — see
+    // control.rs's own doc comment. Port/token written to two discovery
+    // files QML reads once, synchronously, at startup (same pattern as
+    // linux_hello_config's/kio-protondrive-wizard's own control server).
+    let ctrl_token = generate_ctrl_token();
+    let ctrl_port = crate::control::start(ctrl_token.clone());
+    let _ = write_owner_only_file(
+        &runtime_dir_path.join("megatokyo-gui-ctrl.port"),
+        &ctrl_port.to_string(),
+    );
+    let _ = write_owner_only_file(
+        &runtime_dir_path.join("megatokyo-gui-ctrl.token"),
+        &ctrl_token,
+    );
+
     let qml_import_paths = ["/usr/lib/x86_64-linux-gnu/qt6/qml", "/usr/share/qt6/qml"].join(":");
     let qt_plugin_paths = [
         "/usr/lib/x86_64-linux-gnu/qt6/plugins",
@@ -75,9 +91,11 @@ pub fn run(link: &DaemonLink) -> std::process::ExitCode {
     ]
     .join(":");
 
-    // base_url/token passed positionally after `--`, not as env vars: QML
-    // reads `Qt.application.arguments`, but not always the process
-    // environment (see linux_hello_config's own note on this).
+    // base_url/token/runtime_dir passed positionally after `--`, not as env
+    // vars: QML reads `Qt.application.arguments`, but not always the
+    // process environment (see linux_hello_config's own note on this).
+    // runtime_dir is what QML needs to find the ctrl port/token files
+    // written above.
     let mut cmd = Command::new("qml6");
     cmd.arg("-name")
         .arg("megatokyo")
@@ -85,6 +103,7 @@ pub fn run(link: &DaemonLink) -> std::process::ExitCode {
         .arg("--")
         .arg(&link.base_url)
         .arg(&link.token)
+        .arg(&runtime_dir_path)
         .env("QML_IMPORT_PATH", &qml_import_paths)
         .env("QML2_IMPORT_PATH", &qml_import_paths)
         .env("QT_PLUGIN_PATH", &qt_plugin_paths)

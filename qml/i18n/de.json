@@ -4,6 +4,7 @@
         "navReader": "Leser",
         "navGallery": "Galerie",
         "navRants": "Rants",
+        "navSettings": "Einstellungen",
         "statusBackfilling": "Erstsynchronisierung…",
         "statusUpToDate": "Aktuell"
     },
@@ -34,5 +35,24 @@
     "rants": {
         "title": "Rants",
         "loadingTranslation": "Übersetzung läuft…"
+    },
+    "settings": {
+        "title": "Einstellungen",
+        "thisDaemonTitle": "DIESER DIENST",
+        "thisDaemonHint": "Kopiere diese URL und dieses Token in den Abschnitt „Entfernter Dienst“ eines anderen Geräts, um es mit demselben Dienst zu verbinden.",
+        "copy": "Kopieren",
+        "daemonPollIntervalLabel": "Prüfintervall (Min.)",
+        "deeplKeyLabel": "DeepL-API-Schlüssel",
+        "deeplKeyPlaceholder": "DeepL-API-Schlüssel einfügen",
+        "save": "Speichern",
+        "saved": "Gespeichert",
+        "saveFailed": "Speichern fehlgeschlagen",
+        "remoteTitle": "MIT ENTFERNTEM DIENST VERBINDEN",
+        "remoteHint": "Beide Felder leer lassen, um stattdessen den Dienst auf diesem Gerät zu verwenden.",
+        "remoteUrlPlaceholder": "https://megatokyo.beispiel.de",
+        "remoteTokenPlaceholder": "API-Token",
+        "notificationsTitle": "BENACHRICHTIGUNGEN",
+        "notificationsToggle": "Über neue Comics und Rants benachrichtigen",
+        "notificationsPollIntervalLabel": "Prüfen alle (Min.)"
     }
 }

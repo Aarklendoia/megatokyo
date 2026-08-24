@@ -1,4 +1,6 @@
 mod background;
+mod config;
+mod control;
 mod daemon_link;
 mod launcher;
 mod notification;
