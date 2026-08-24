@@ -2,26 +2,35 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
-// Rants screen: list + detail, with a language picker that calls
+// Rants screen: list + detail, with a translation toggle that calls
 // GET /rant?number=N&lang=xx (cached server-side by the daemon after the
 // first translation, see core::translate) — this screen keeps its own
 // per-session cache too, so switching back to an already-seen language is
 // instant.
+//
+// No language *picker*: translation only ever offers the system's own
+// language (I18n.currentLanguage, already resolved from Qt.locale() at
+// startup), and only when a DeepL key is actually configured — DeepL is a
+// paid-by-usage API keyed to the user's own account, so there's no sense
+// spending it translating into languages nobody in this install reads.
 Item {
     id: root
 
     property var api: null
     property var rants: []
     property int selectedNumber: -1
+    property bool deeplConfigured: false
 
     readonly property var theme: Theme {}
 
-    readonly property var languages: [
-        { code: "en", label: "EN" },
-        { code: "fr", label: "FR" },
-        { code: "de", label: "DE" },
-        { code: "ja", label: "JA" }
-    ]
+    readonly property string systemLang: I18n.currentLanguage
+    readonly property bool canTranslate: root.deeplConfigured && root.systemLang !== "en"
+    readonly property var languages: {
+        var opts = [{ code: "en", label: "EN" }]
+        if (root.canTranslate)
+            opts.push({ code: root.systemLang, label: root.systemLang.toUpperCase() })
+        return opts
+    }
     property string selectedLang: "en"
     property var translationCache: ({})
     property bool loadingTranslation: false
@@ -42,6 +51,15 @@ Item {
     onRantsChanged: {
         if (selectedNumber === -1 && rants.length > 0)
             selectedNumber = rants[0].number
+    }
+
+    // The DeepL key can be cleared (or the app's own system-language
+    // detection can't change mid-run, but the key can) from Settings while
+    // a translated rant is on screen — fall back to the original rather
+    // than keep pointing at a language selectLang() can no longer offer.
+    onCanTranslateChanged: {
+        if (!canTranslate)
+            selectedLang = "en"
     }
 
     function selectLang(code) {
@@ -145,6 +163,7 @@ Item {
 
             Row {
                 spacing: 6
+                visible: root.canTranslate
                 Repeater {
                     model: root.languages
                     delegate: Rectangle {

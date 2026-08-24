@@ -255,6 +255,12 @@ impl Store {
         Ok(rants)
     }
 
+    pub fn has_any_rant(&self) -> Result<bool> {
+        let conn = self.conn.lock().unwrap();
+        let count: i64 = conn.query_row("SELECT COUNT(*) FROM rants", [], |row| row.get(0))?;
+        Ok(count > 0)
+    }
+
     pub fn rant_by_number(&self, number: i32) -> Result<Option<Rant>> {
         let conn = self.conn.lock().unwrap();
         conn.query_row(
@@ -468,7 +474,9 @@ mod tests {
     #[test]
     fn upserts_and_reads_back_a_rant() {
         let store = Store::open_in_memory().unwrap();
+        assert!(!store.has_any_rant().unwrap());
         store.upsert_rant(&sample_rant()).unwrap();
+        assert!(store.has_any_rant().unwrap());
         assert_eq!(store.rant_by_number(1106).unwrap(), Some(sample_rant()));
         assert_eq!(store.all_rants().unwrap(), vec![sample_rant()]);
     }

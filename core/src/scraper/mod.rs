@@ -6,6 +6,7 @@
 
 pub mod chapters;
 pub mod date;
+pub mod rant_archive;
 pub mod rants;
 pub mod strips;
 

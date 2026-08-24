@@ -15,6 +15,10 @@ Item {
     property var guiCtrlApi: null
     property string localBaseUrl: ""
     property string localToken: ""
+    // Called after a successful saveDaemon() — lets main.qml refresh
+    // RantsScreen's deeplConfigured flag immediately, without waiting for
+    // the next full refreshAll()/app restart.
+    property var daemonConfigSaved: function () {}
 
     readonly property var theme: Theme {}
 
@@ -89,7 +93,11 @@ Item {
         api.post(
             "/config?deepl_api_key=" + encodeURIComponent(deeplField.text)
             + "&poll_interval_minutes=" + daemonPollField.text,
-            function () { root.daemonStatusIsError = false; root.daemonStatus = I18n.tr("settings.saved") },
+            function () {
+                root.daemonStatusIsError = false
+                root.daemonStatus = I18n.tr("settings.saved")
+                root.daemonConfigSaved()
+            },
             function () { root.daemonStatusIsError = true; root.daemonStatus = I18n.tr("settings.saveFailed") }
         )
     }
