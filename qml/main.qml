@@ -143,6 +143,21 @@ ApplicationWindow {
 
     background: Rectangle { color: theme.ink }
 
+    // Arrow-key paging, only while the Reader tab is actually showing —
+    // a window-wide Shortcut rather than a Keys handler on ReaderScreen
+    // itself, since StackLayout keeps every screen alive and none of them
+    // has keyboard focus by default.
+    Shortcut {
+        sequence: "Left"
+        enabled: nav.currentIndex === 1
+        onActivated: readerScreen.goTo(-1)
+    }
+    Shortcut {
+        sequence: "Right"
+        enabled: nav.currentIndex === 1
+        onActivated: readerScreen.goTo(1)
+    }
+
     RowLayout {
         anchors.fill: parent
         spacing: 0
