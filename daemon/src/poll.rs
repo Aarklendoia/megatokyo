@@ -14,10 +14,22 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
+use megatokyo_core::domain::{Checking, Rant};
 use megatokyo_core::scraper::{self, strips::UnresolvedStrip};
 use megatokyo_core::{feed, store::Store};
 
 use crate::control::AppState;
+
+/// Real strip-image probe base — see `scraper::strips::resolve`'s own
+/// hardcoded default. Threaded through explicitly (rather than each
+/// function calling `scraper::strips::resolve` directly) so tests can
+/// substitute a mock server, same seam as `Translator::with_endpoint`.
+const STRIP_IMAGE_BASE_URL: &str = "https://megatokyo.com/strips";
+
+/// Real per-rant redirect base — see [`resolve_and_store_rants`]'s doc
+/// comment on why a rant number resolves through this URL rather than one
+/// of its own.
+const RANT_LINK_BASE_URL: &str = "https://megatokyo.com/rant";
 
 /// One full pass: backfill if the store is empty, then a feed diff either
 /// way (a fresh backfill's own scrape can itself lag behind the feed by the
@@ -80,12 +92,19 @@ async fn backfill(
     client: &reqwest::Client,
     store: &Store,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let archive_html = client
-        .get(scraper::ARCHIVE_URL)
-        .send()
-        .await?
-        .text()
-        .await?;
+    backfill_at(client, store, scraper::ARCHIVE_URL, STRIP_IMAGE_BASE_URL).await
+}
+
+/// [`backfill`]'s actual logic, parameterized on the archive and
+/// strip-image URLs so tests can point it at a local mock server instead
+/// of the real site.
+async fn backfill_at(
+    client: &reqwest::Client,
+    store: &Store,
+    archive_url: &str,
+    strip_image_base_url: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let archive_html = client.get(archive_url).send().await?.text().await?;
 
     for chapter in scraper::chapters::parse(&archive_html) {
         store.upsert_chapter(&chapter)?;
@@ -93,7 +112,7 @@ async fn backfill(
 
     let unresolved = scraper::strips::parse(&archive_html);
     log::info!("backfilling {} strips", unresolved.len());
-    resolve_and_store_strips(client, store, unresolved).await;
+    resolve_and_store_strips(client, store, unresolved, strip_image_base_url).await;
     Ok(())
 }
 
@@ -109,10 +128,13 @@ const BACKFILL_CONCURRENCY: usize = 16;
 /// Resolves each strip's image extension and stores it — skips strips
 /// already in the database (matches the original's `stripsInDatabase`
 /// filter: no point re-probing megatokyo.com for a strip we already have).
+/// `strip_image_base_url` is [`STRIP_IMAGE_BASE_URL`] in production, a mock
+/// server in tests.
 async fn resolve_and_store_strips(
     client: &reqwest::Client,
     store: &Store,
     unresolved: Vec<UnresolvedStrip>,
+    strip_image_base_url: &str,
 ) {
     let to_resolve: Vec<UnresolvedStrip> = unresolved
         .into_iter()
@@ -124,10 +146,14 @@ async fn resolve_and_store_strips(
     for strip in to_resolve {
         let client = client.clone();
         let semaphore = semaphore.clone();
+        let base_url = strip_image_base_url.to_string();
         tasks.spawn(async move {
             let _permit = semaphore.acquire_owned().await;
             let number = strip.number;
-            (number, scraper::strips::resolve(&client, strip).await)
+            (
+                number,
+                scraper::strips::resolve_against(&client, strip, &base_url).await,
+            )
         });
     }
 
@@ -159,14 +185,27 @@ async fn backfill_rants(
     client: &reqwest::Client,
     store: &Store,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let html = client
-        .get(scraper::rant_archive::RANT_ARCHIVE_URL)
-        .send()
-        .await?
-        .text()
-        .await?;
+    backfill_rants_at(
+        client,
+        store,
+        scraper::rant_archive::RANT_ARCHIVE_URL,
+        RANT_LINK_BASE_URL,
+    )
+    .await
+}
+
+/// [`backfill_rants`]'s actual logic, parameterized on the rant-archive and
+/// per-rant-link URLs so tests can point it at a local mock server instead
+/// of the real site.
+async fn backfill_rants_at(
+    client: &reqwest::Client,
+    store: &Store,
+    rant_archive_url: &str,
+    rant_link_base_url: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let html = client.get(rant_archive_url).send().await?.text().await?;
     let numbers = scraper::rant_archive::parse_numbers(&html);
-    resolve_and_store_rants(client, store, numbers).await;
+    resolve_and_store_rants(client, store, numbers, rant_link_base_url).await;
     Ok(())
 }
 
@@ -178,7 +217,12 @@ async fn backfill_rants(
 /// fetch resolves (via redirect) to a strip page that can host up to two
 /// rants, so a number already picked up as a side effect of an earlier
 /// fetch in this same pass is skipped rather than re-fetched.
-async fn resolve_and_store_rants(client: &reqwest::Client, store: &Store, numbers: Vec<i32>) {
+async fn resolve_and_store_rants(
+    client: &reqwest::Client,
+    store: &Store,
+    numbers: Vec<i32>,
+    rant_link_base_url: &str,
+) {
     let semaphore = Arc::new(tokio::sync::Semaphore::new(BACKFILL_CONCURRENCY));
     let mut tasks = tokio::task::JoinSet::new();
     for number in numbers {
@@ -189,24 +233,29 @@ async fn resolve_and_store_rants(client: &reqwest::Client, store: &Store, number
         }
         let client = client.clone();
         let semaphore = semaphore.clone();
+        let link = format!("{rant_link_base_url}/{number}");
         tasks.spawn(async move {
             let _permit = semaphore.acquire_owned().await;
-            let link = format!("https://megatokyo.com/rant/{number}");
             (number, fetch_rants_at(&client, &link).await)
         });
     }
 
     while let Some(result) = tasks.join_next().await {
         match result {
-            Ok((_, Ok(rants))) => {
-                for rant in rants {
-                    if let Err(err) = store.upsert_rant(&rant) {
-                        log::warn!("could not store rant {}: {err}", rant.number);
-                    }
-                }
-            }
+            Ok((_, Ok(rants))) => store_rants(store, rants),
             Ok((number, Err(err))) => log::warn!("could not fetch rant {number}: {err}"),
             Err(join_err) => log::warn!("rant resolve task failed: {join_err}"),
+        }
+    }
+}
+
+/// Stores every rant in `rants`, logging (not failing) on a per-rant store
+/// error — shared by [`resolve_and_store_rants`] and [`check_feed`], which
+/// both end up with an already-fetched `Vec<Rant>` to persist the same way.
+fn store_rants(store: &Store, rants: Vec<Rant>) {
+    for rant in rants {
+        if let Err(err) = store.upsert_rant(&rant) {
+            log::warn!("could not store rant {}: {err}", rant.number);
         }
     }
 }
@@ -217,7 +266,27 @@ async fn check_feed(
     client: &reqwest::Client,
     store: &Store,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let items = feed::fetch(client).await?;
+    check_feed_at(
+        client,
+        store,
+        feed::FEED_URL,
+        scraper::ARCHIVE_URL,
+        STRIP_IMAGE_BASE_URL,
+    )
+    .await
+}
+
+/// [`check_feed`]'s actual logic, parameterized on the feed and archive
+/// URLs so tests can point it at a local mock server instead of the real
+/// site.
+async fn check_feed_at(
+    client: &reqwest::Client,
+    store: &Store,
+    feed_url: &str,
+    archive_url: &str,
+    strip_image_base_url: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let items = feed::fetch_at(client, feed_url).await?;
     let mut checking = store.get_checking()?;
     let last_check = checking.last_check.clone().unwrap_or_default();
     let new_items = new_items(&items, &last_check);
@@ -230,19 +299,13 @@ async fn check_feed(
         // strip needs — archive.php is the only place that mapping lives.
         // resolve_and_store_strips already skips strips already in the
         // database, so this stays cheap in the common one-new-strip case.
-        if let Err(err) = backfill(client, store).await {
+        if let Err(err) = backfill_at(client, store, archive_url, strip_image_base_url).await {
             log::warn!("could not rescrape the archive after a feed change: {err}");
         }
         for item in &new_items {
             if item.kind == feed::FeedItemKind::Rant {
                 match fetch_rants_at(client, &item.link).await {
-                    Ok(rants) => {
-                        for rant in rants {
-                            if let Err(err) = store.upsert_rant(&rant) {
-                                log::warn!("could not store rant {}: {err}", rant.number);
-                            }
-                        }
-                    }
+                    Ok(rants) => store_rants(store, rants),
                     Err(err) => log::warn!(
                         "could not fetch rant {} at {}: {err}",
                         item.number,
@@ -253,15 +316,23 @@ async fn check_feed(
         }
     }
 
-    for item in &new_items {
+    apply_checkpoint(&mut checking, &new_items);
+    store.save_checking(&checking)?;
+    Ok(())
+}
+
+/// Advances `checking`'s per-kind last-seen number to whichever new item of
+/// that kind comes last in `new_items` (same order `feed::fetch` returned
+/// them in — not necessarily numeric order), and stamps `last_check` to
+/// now. Pure, so it's unit-testable without touching the network.
+fn apply_checkpoint(checking: &mut Checking, new_items: &[&feed::FeedItem]) {
+    for item in new_items {
         match item.kind {
             feed::FeedItemKind::Strip => checking.last_strip_number = item.number,
             feed::FeedItemKind::Rant => checking.last_rant_number = item.number,
         }
     }
     checking.last_check = Some(chrono::Utc::now().to_rfc3339());
-    store.save_checking(&checking)?;
-    Ok(())
 }
 
 /// Rants aren't addressable by their own page: `https://megatokyo.com/rant/<n>`
@@ -272,10 +343,7 @@ async fn check_feed(
 /// strip page without this daemon ever having to work out which strip
 /// that is itself. Fetch-only (no store access) so callers can run this
 /// concurrently across many links, see [`resolve_and_store_rants`].
-async fn fetch_rants_at(
-    client: &reqwest::Client,
-    link: &str,
-) -> Result<Vec<megatokyo_core::domain::Rant>, reqwest::Error> {
+async fn fetch_rants_at(client: &reqwest::Client, link: &str) -> Result<Vec<Rant>, reqwest::Error> {
     let html = client.get(link).send().await?.text().await?;
     Ok(scraper::rants::parse(&html))
 }
@@ -311,6 +379,8 @@ fn is_newer(published_at: &str, last_check: &str) -> bool {
 mod tests {
     use super::*;
     use megatokyo_core::feed::{FeedItem, FeedItemKind};
+    use wiremock::matchers::{method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
     fn item(published_at: &str) -> FeedItem {
         FeedItem {
@@ -320,6 +390,51 @@ mod tests {
             published_at: published_at.to_string(),
             link: "https://megatokyo.com/strip/1".to_string(),
         }
+    }
+
+    /// `core`'s own `strip_1619.html` fixture (two rants, #1106 and #1107)
+    /// — reused here rather than duplicated, since it's exactly what a
+    /// strip page's HTML looks like from `fetch_rants_at`'s point of view.
+    fn strip_1619_fixture() -> String {
+        std::fs::read_to_string(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../core/tests/fixtures/strip_1619.html"
+        ))
+        .unwrap()
+    }
+
+    fn sample_rant(number: i32) -> Rant {
+        Rant {
+            number,
+            author: "Piro".to_string(),
+            title: "Placeholder".to_string(),
+            url: String::new(),
+            publish_date: String::new(),
+            content: String::new(),
+        }
+    }
+
+    /// One chapter, two strips — small on purpose so a test backfill only
+    /// ever probes a couple of strip-image URLs, not the ~1600 in `core`'s
+    /// full `archive.html` fixture.
+    const MINI_ARCHIVE_HTML: &str = r#"<div class="content"><h2><a id="C-1">Chapter 1: &quot;Test&quot;</a></h2><ul><li><a title="August 14th, 2000" name="1" href="./strip/1">0001 - First Strip</a></li><li><a title="August 15th, 2000" name="2" href="./strip/2">0002 - Second Strip</a></li></ul></div>"#;
+
+    fn feed_xml(items_xml: &str) -> String {
+        format!(
+            r#"<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0"><channel>
+<title>Megatokyo Comics and News</title>
+<link>https://megatokyo.com</link>
+<description>News and Comics from Megatokyo.</description>
+{items_xml}
+</channel></rss>"#
+        )
+    }
+
+    fn feed_item_xml(title: &str, link: &str, pub_date: &str) -> String {
+        format!(
+            r#"<item><title>{title}</title><link>{link}</link><guid isPermaLink="true">{link}</guid><pubDate>{pub_date}</pubDate></item>"#
+        )
     }
 
     #[test]
@@ -344,5 +459,197 @@ mod tests {
             "2026-08-21T09:00:00-08:00",
             "2026-08-21T10:00:00+00:00"
         ));
+    }
+
+    #[test]
+    fn apply_checkpoint_advances_the_last_number_seen_per_kind() {
+        let mut checking = Checking::default();
+        let strip = item("2026-01-01T00:00:00Z");
+        let mut rant = item("2026-01-02T00:00:00Z");
+        rant.kind = FeedItemKind::Rant;
+        rant.number = 42;
+
+        apply_checkpoint(&mut checking, &[&strip, &rant]);
+
+        assert_eq!(checking.last_strip_number, 1);
+        assert_eq!(checking.last_rant_number, 42);
+        assert!(checking.last_check.is_some());
+    }
+
+    #[test]
+    fn apply_checkpoint_stamps_last_check_even_with_no_new_items() {
+        let mut checking = Checking::default();
+        apply_checkpoint(&mut checking, &[]);
+        assert!(checking.last_check.is_some());
+        assert_eq!(checking.last_strip_number, 0);
+        assert_eq!(checking.last_rant_number, 0);
+    }
+
+    #[tokio::test]
+    async fn fetch_rants_at_parses_the_rants_off_the_fetched_page() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/strip/1619"))
+            .respond_with(ResponseTemplate::new(200).set_body_string(strip_1619_fixture()))
+            .mount(&server)
+            .await;
+
+        let client = reqwest::Client::new();
+        let rants = fetch_rants_at(&client, &format!("{}/strip/1619", server.uri()))
+            .await
+            .unwrap();
+
+        let numbers: Vec<i32> = rants.iter().map(|r| r.number).collect();
+        assert_eq!(numbers, vec![1106, 1107]);
+    }
+
+    /// Direct regression test for the bug class behind #37 (a rant already
+    /// in the store was still assumed unbackfilled): a number already known
+    /// must not be re-fetched at all.
+    #[tokio::test]
+    async fn resolve_and_store_rants_skips_numbers_already_in_the_store() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/9999"))
+            .respond_with(ResponseTemplate::new(200))
+            .expect(0)
+            .mount(&server)
+            .await;
+        Mock::given(method("GET"))
+            .and(path("/1200"))
+            .respond_with(ResponseTemplate::new(200).set_body_string(strip_1619_fixture()))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        let store = Store::open_in_memory().unwrap();
+        store.upsert_rant(&sample_rant(9999)).unwrap();
+
+        let client = reqwest::Client::new();
+        resolve_and_store_rants(&client, &store, vec![9999, 1200], &server.uri()).await;
+
+        // The already-known number was never touched...
+        assert_eq!(
+            store.rant_by_number(9999).unwrap().unwrap().title,
+            "Placeholder"
+        );
+        // ...while the unknown one's page (hosting two rants) got fetched
+        // and both stored.
+        assert!(store.rant_by_number(1106).unwrap().is_some());
+        assert!(store.rant_by_number(1107).unwrap().is_some());
+    }
+
+    #[tokio::test]
+    async fn check_feed_at_backfills_new_content_and_advances_the_checkpoint() {
+        let server = MockServer::start().await;
+        let rant_link = format!("{}/rant-page", server.uri());
+
+        let feed_body = feed_xml(&format!(
+            "{}{}",
+            feed_item_xml(
+                r#"Comic [2] "Second Strip""#,
+                "https://megatokyo.com/strip/2",
+                "Mon, 01 Jan 2026 00:00:00 +0000",
+            ),
+            feed_item_xml(
+                r#"Rant [1200] "Test Rant""#,
+                &rant_link,
+                "Mon, 01 Jan 2026 00:00:00 +0000",
+            ),
+        ));
+
+        Mock::given(method("GET"))
+            .and(path("/feed.xml"))
+            .respond_with(ResponseTemplate::new(200).set_body_string(feed_body))
+            .mount(&server)
+            .await;
+        Mock::given(method("GET"))
+            .and(path("/archive.php"))
+            .respond_with(ResponseTemplate::new(200).set_body_string(MINI_ARCHIVE_HTML))
+            .mount(&server)
+            .await;
+        Mock::given(method("GET"))
+            .and(path("/rant-page"))
+            .respond_with(ResponseTemplate::new(200).set_body_string(strip_1619_fixture()))
+            .mount(&server)
+            .await;
+        // Strip 1 (< 1081) probes .gif first — resolves. Strip 2 is left
+        // unmocked (every extension 404s), exercising the "could not
+        // resolve" branch of resolve_and_store_strips alongside the
+        // success one.
+        Mock::given(method("HEAD"))
+            .and(path("/strips/0001.gif"))
+            .respond_with(ResponseTemplate::new(200))
+            .mount(&server)
+            .await;
+
+        let store = Store::open_in_memory().unwrap();
+        let client = reqwest::Client::new();
+
+        check_feed_at(
+            &client,
+            &store,
+            &format!("{}/feed.xml", server.uri()),
+            &format!("{}/archive.php", server.uri()),
+            &format!("{}/strips", server.uri()),
+        )
+        .await
+        .unwrap();
+
+        let checking = store.get_checking().unwrap();
+        assert_eq!(checking.last_strip_number, 2);
+        assert_eq!(checking.last_rant_number, 1200);
+        assert!(checking.last_check.is_some());
+
+        assert!(store.strip_by_number(1).unwrap().is_some());
+        assert!(store.strip_by_number(2).unwrap().is_none());
+        assert!(store.rant_by_number(1106).unwrap().is_some());
+        assert!(store.rant_by_number(1107).unwrap().is_some());
+    }
+
+    #[tokio::test]
+    async fn check_feed_at_skips_the_backfill_when_nothing_is_new() {
+        let server = MockServer::start().await;
+
+        let feed_body = feed_xml(&feed_item_xml(
+            r#"Comic [1] "First Strip""#,
+            "https://megatokyo.com/strip/1",
+            "Mon, 01 Jan 2026 00:00:00 +0000",
+        ));
+        Mock::given(method("GET"))
+            .and(path("/feed.xml"))
+            .respond_with(ResponseTemplate::new(200).set_body_string(feed_body))
+            .mount(&server)
+            .await;
+        // Must not be called: nothing in the feed is newer than the
+        // checkpoint set below.
+        Mock::given(method("GET"))
+            .and(path("/archive.php"))
+            .respond_with(ResponseTemplate::new(200).set_body_string(MINI_ARCHIVE_HTML))
+            .expect(0)
+            .mount(&server)
+            .await;
+
+        let store = Store::open_in_memory().unwrap();
+        store
+            .save_checking(&Checking {
+                last_check: Some("2027-01-01T00:00:00Z".to_string()),
+                last_strip_number: 0,
+                last_rant_number: 0,
+            })
+            .unwrap();
+
+        let client = reqwest::Client::new();
+        check_feed_at(
+            &client,
+            &store,
+            &format!("{}/feed.xml", server.uri()),
+            &format!("{}/archive.php", server.uri()),
+            &format!("{}/strips", server.uri()),
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(store.get_checking().unwrap().last_strip_number, 0);
     }
 }
