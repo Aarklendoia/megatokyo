@@ -27,8 +27,11 @@ Item {
     property int daemonPollIntervalMinutes: 15
 
     property string remoteStatus: ""
+    property bool remoteStatusIsError: false
     property string notificationsStatus: ""
+    property bool notificationsStatusIsError: false
     property string daemonStatus: ""
+    property bool daemonStatusIsError: false
 
     function loadRemoteSettings() {
         if (!guiCtrlApi)
@@ -66,8 +69,8 @@ Item {
         guiCtrlApi.post(
             "/gui-config?remote_base_url=" + encodeURIComponent(remoteUrlField.text)
             + "&remote_api_token=" + encodeURIComponent(remoteTokenField.text),
-            function () { root.remoteStatus = I18n.tr("settings.saved") },
-            function () { root.remoteStatus = I18n.tr("settings.saveFailed") }
+            function () { root.remoteStatusIsError = false; root.remoteStatus = I18n.tr("settings.saved") },
+            function () { root.remoteStatusIsError = true; root.remoteStatus = I18n.tr("settings.saveFailed") }
         )
     }
 
@@ -76,8 +79,8 @@ Item {
         guiCtrlApi.post(
             "/gui-config?notifications_enabled=" + (notificationsCheck.checked ? "true" : "false")
             + "&poll_interval_minutes=" + guiPollField.text,
-            function () { root.notificationsStatus = I18n.tr("settings.saved") },
-            function () { root.notificationsStatus = I18n.tr("settings.saveFailed") }
+            function () { root.notificationsStatusIsError = false; root.notificationsStatus = I18n.tr("settings.saved") },
+            function () { root.notificationsStatusIsError = true; root.notificationsStatus = I18n.tr("settings.saveFailed") }
         )
     }
 
@@ -86,8 +89,8 @@ Item {
         api.post(
             "/config?deepl_api_key=" + encodeURIComponent(deeplField.text)
             + "&poll_interval_minutes=" + daemonPollField.text,
-            function () { root.daemonStatus = I18n.tr("settings.saved") },
-            function () { root.daemonStatus = I18n.tr("settings.saveFailed") }
+            function () { root.daemonStatusIsError = false; root.daemonStatus = I18n.tr("settings.saved") },
+            function () { root.daemonStatusIsError = true; root.daemonStatus = I18n.tr("settings.saveFailed") }
         )
     }
 
@@ -282,7 +285,7 @@ Item {
                         }
                         Label {
                             text: root.daemonStatus
-                            color: theme.teal
+                            color: root.daemonStatusIsError ? theme.red : theme.teal
                             font.pixelSize: 11
                         }
                     }
@@ -382,7 +385,7 @@ Item {
                         }
                         Label {
                             text: root.remoteStatus
-                            color: theme.teal
+                            color: root.remoteStatusIsError ? theme.red : theme.teal
                             font.pixelSize: 11
                         }
                     }
@@ -471,7 +474,7 @@ Item {
                         }
                         Label {
                             text: root.notificationsStatus
-                            color: theme.teal
+                            color: root.notificationsStatusIsError ? theme.red : theme.teal
                             font.pixelSize: 11
                         }
                     }
