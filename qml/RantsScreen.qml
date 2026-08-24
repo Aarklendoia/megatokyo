@@ -39,6 +39,18 @@ Item {
         return r.number === selectedNumber
     })
 
+    // Filters the list only — selectedRant/onRantsChanged's "select the
+    // first one" both stay keyed off the full, unfiltered rants list, so
+    // clearing the search box never loses track of what's selected.
+    readonly property var filteredRants: {
+        var q = searchField.text.trim().toLowerCase()
+        if (q.length === 0)
+            return root.rants
+        return root.rants.filter(function (r) {
+            return r.title.toLowerCase().indexOf(q) !== -1 || String(r.number) === q
+        })
+    }
+
     readonly property string displayedContent: {
         if (!selectedRant)
             return ""
@@ -105,11 +117,40 @@ Item {
                 color: theme.text
             }
 
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 32
+                radius: 8
+                color: theme.panelSunken
+                border.color: theme.line
+                border.width: 1
+                TextField {
+                    id: searchField
+                    anchors.fill: parent
+                    anchors.margins: 6
+                    padding: 0
+                    background: null
+                    color: theme.text
+                    font.pixelSize: 12
+                    selectByMouse: true
+                    placeholderText: I18n.tr("rants.searchPlaceholder")
+                    placeholderTextColor: theme.textFaint
+                }
+            }
+
             ListView {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 clip: true
-                model: root.rants
+                model: root.filteredRants
+                ScrollBar.vertical: ScrollBar {
+                    policy: ScrollBar.AsNeeded
+                    contentItem: Rectangle {
+                        implicitWidth: 4
+                        radius: 2
+                        color: theme.line
+                    }
+                }
                 delegate: Rectangle {
                     width: ListView.view.width
                     height: 46
@@ -196,9 +237,16 @@ Item {
             ScrollView {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                contentWidth: availableWidth
 
+                // Capped at a comfortable reading measure and centered,
+                // rather than stretched across the full pane — full-width
+                // lines got noticeably hard to follow once the window was
+                // wide (reported by the user), same reasoning as any
+                // reading-focused app's "reader mode" column width.
                 Label {
-                    width: parent.width
+                    width: Math.min(parent.width, 720)
+                    anchors.horizontalCenter: parent.horizontalCenter
                     text: root.loadingTranslation ? I18n.tr("rants.loadingTranslation") : root.displayedContent
                     textFormat: Text.RichText
                     wrapMode: Text.WordWrap
