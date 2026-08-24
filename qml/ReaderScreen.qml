@@ -3,9 +3,9 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 // Reader screen: strip-by-strip navigation, "all strips" vs "main story
-// only" (chapters with a non-zero number — bonus/bonus-like sections parse
-// to category number 0, see core::scraper::chapters), favorites, and
-// quick-jump to a chapter/category or to favorites.
+// only" (chapters under category "C-<n>" — bonus sections get their own
+// short codes, see core::scraper::chapters), favorites, and quick-jump to
+// a chapter/category or to favorites.
 Item {
     id: root
 
@@ -81,6 +81,27 @@ Item {
     onCurrentNumberChanged: {
         if (currentNumber > 0)
             saveProgress(currentNumber)
+    }
+
+    // Switching "All strips" ↔ "Main story only" can leave the strip
+    // currently on screen outside the new filter (currentIndex === -1) —
+    // jump to the nearest strip at or before it that does match, rather
+    // than silently keep showing a strip the active filter excludes.
+    // Falls back to the first match if the current one comes before
+    // everything in the new list (e.g. mid-prologue bonus content).
+    onMainStoryOnlyChanged: {
+        if (currentIndex !== -1)
+            return
+        var list = filteredStrips
+        if (list.length === 0)
+            return
+        var candidate = list[0]
+        for (var i = 0; i < list.length; i++) {
+            if (list[i].number > currentNumber)
+                break
+            candidate = list[i]
+        }
+        currentNumber = candidate.number
     }
 
     ColumnLayout {
