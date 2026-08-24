@@ -54,8 +54,16 @@ Item {
         return f.strip_number === currentNumber
     })
 
+    // Mirrors filteredStrips' own scope: with "Main story only" active,
+    // jumping to a bonus chapter would immediately be overridden by
+    // onMainStoryOnlyChanged-style logic anyway (nothing there matches the
+    // filter) — so bonus chapters aren't offered as a jump target at all
+    // while that filter is on.
     readonly property var jumpModel: {
-        var items = chapters.map(function (c) {
+        var source = mainStoryOnly ? chapters.filter(function (c) {
+            return c.category.indexOf("C-") === 0
+        }) : chapters
+        var items = source.map(function (c) {
             var isMainStory = c.category.indexOf("C-") === 0
             return {
                 category: c.category,
