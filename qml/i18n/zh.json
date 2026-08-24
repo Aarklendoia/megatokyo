@@ -30,7 +30,8 @@
     "gallery": {
         "title": "画廊",
         "chipAll": "全部",
-        "chipFavorites": "★ 收藏"
+        "chipFavorites": "★ 收藏",
+        "sectionBonus": "番外"
     },
     "rants": {
         "title": "闲谈",

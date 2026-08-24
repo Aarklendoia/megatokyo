@@ -30,7 +30,8 @@
     "gallery": {
         "title": "المعرض",
         "chipAll": "الكل",
-        "chipFavorites": "★ المفضلة"
+        "chipFavorites": "★ المفضلة",
+        "sectionBonus": "إضافي"
     },
     "rants": {
         "title": "المقالات",

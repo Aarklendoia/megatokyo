@@ -30,7 +30,8 @@
     "gallery": {
         "title": "Galería",
         "chipAll": "Todas",
-        "chipFavorites": "★ Favoritos"
+        "chipFavorites": "★ Favoritos",
+        "sectionBonus": "Bonus"
     },
     "rants": {
         "title": "Rants",
