@@ -27,6 +27,9 @@ pub async fn run_once(client: &reqwest::Client, state: &AppState) {
     if let Err(err) = backfill_if_empty(client, &state.store).await {
         log::warn!("backfill failed: {err}");
     }
+    if let Err(err) = backfill_rants_if_empty(client, &state.store).await {
+        log::warn!("rant backfill failed: {err}");
+    }
     state.backfilling.store(false, Ordering::Relaxed);
 
     if let Err(err) = check_feed(client, &state.store).await {
@@ -141,6 +144,73 @@ async fn resolve_and_store_strips(
     }
 }
 
+/// Backfills every rant that has ever existed, not just whatever the RSS
+/// feed still carries (5 at a time, verified live — see
+/// `scraper::rant_archive`'s doc comment). Runs once: after the first pass
+/// fills the `rants` table, every later rant is caught incrementally by
+/// `check_feed` below as it shows up in the feed, so there's no need to
+/// re-walk 1000+ archive entries on every poll cycle.
+async fn backfill_rants_if_empty(
+    client: &reqwest::Client,
+    store: &Store,
+) -> Result<(), Box<dyn std::error::Error>> {
+    if store.has_any_rant()? {
+        return Ok(());
+    }
+    log::info!("no rants in the database yet, running the initial rant backfill");
+    let html = client
+        .get(scraper::rant_archive::RANT_ARCHIVE_URL)
+        .send()
+        .await?
+        .text()
+        .await?;
+    let numbers = scraper::rant_archive::parse_numbers(&html);
+    log::info!("backfilling up to {} rants", numbers.len());
+    resolve_and_store_rants(client, store, numbers).await;
+    Ok(())
+}
+
+/// Same bounded-concurrency shape as [`resolve_and_store_strips`]: each
+/// task only fetches and parses (network + CPU, both `Send`), and the
+/// result is stored back on the caller's thread afterwards — `Store`'s
+/// `Connection` lives behind a plain `Mutex`, not an `Arc`, so it can't be
+/// moved into a spawned task, only borrowed sequentially here. A `/rant/<n>`
+/// fetch resolves (via redirect) to a strip page that can host up to two
+/// rants, so a number already picked up as a side effect of an earlier
+/// fetch in this same pass is skipped rather than re-fetched.
+async fn resolve_and_store_rants(client: &reqwest::Client, store: &Store, numbers: Vec<i32>) {
+    let semaphore = Arc::new(tokio::sync::Semaphore::new(BACKFILL_CONCURRENCY));
+    let mut tasks = tokio::task::JoinSet::new();
+    for number in numbers {
+        // Already picked up by an earlier fetch in this same pass (see the
+        // doc comment above) — no point re-fetching its strip page.
+        if matches!(store.rant_by_number(number), Ok(Some(_))) {
+            continue;
+        }
+        let client = client.clone();
+        let semaphore = semaphore.clone();
+        tasks.spawn(async move {
+            let _permit = semaphore.acquire_owned().await;
+            let link = format!("https://megatokyo.com/rant/{number}");
+            (number, fetch_rants_at(&client, &link).await)
+        });
+    }
+
+    while let Some(result) = tasks.join_next().await {
+        match result {
+            Ok((_, Ok(rants))) => {
+                for rant in rants {
+                    if let Err(err) = store.upsert_rant(&rant) {
+                        log::warn!("could not store rant {}: {err}", rant.number);
+                    }
+                }
+            }
+            Ok((number, Err(err))) => log::warn!("could not fetch rant {number}: {err}"),
+            Err(join_err) => log::warn!("rant resolve task failed: {join_err}"),
+        }
+    }
+}
+
 /// Diffs the RSS feed against the stored `checking` checkpoint, backfills
 /// any strip/rant newer than the checkpoint, and advances it.
 async fn check_feed(
@@ -165,12 +235,19 @@ async fn check_feed(
         }
         for item in &new_items {
             if item.kind == feed::FeedItemKind::Rant {
-                if let Err(err) = fetch_and_store_rants_at(client, store, &item.link).await {
-                    log::warn!(
+                match fetch_rants_at(client, &item.link).await {
+                    Ok(rants) => {
+                        for rant in rants {
+                            if let Err(err) = store.upsert_rant(&rant) {
+                                log::warn!("could not store rant {}: {err}", rant.number);
+                            }
+                        }
+                    }
+                    Err(err) => log::warn!(
                         "could not fetch rant {} at {}: {err}",
                         item.number,
                         item.link
-                    );
+                    ),
                 }
             }
         }
@@ -188,21 +265,19 @@ async fn check_feed(
 }
 
 /// Rants aren't addressable by their own page: `https://megatokyo.com/rant/<n>`
-/// (a feed item's `link`) 301-redirects to whichever strip page actually
-/// hosts it (verified live — see `feed::FeedItem::link`'s doc comment).
-/// `reqwest::Client` follows redirects by default, so fetching `link`
-/// directly lands on the right strip page without this daemon ever having
-/// to work out which strip that is itself.
-async fn fetch_and_store_rants_at(
+/// (a feed item's `link`, or a number from `scraper::rant_archive`) 301-
+/// redirects to whichever strip page actually hosts it (verified live —
+/// see `feed::FeedItem::link`'s doc comment). `reqwest::Client` follows
+/// redirects by default, so fetching `link` directly lands on the right
+/// strip page without this daemon ever having to work out which strip
+/// that is itself. Fetch-only (no store access) so callers can run this
+/// concurrently across many links, see [`resolve_and_store_rants`].
+async fn fetch_rants_at(
     client: &reqwest::Client,
-    store: &Store,
     link: &str,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<Vec<megatokyo_core::domain::Rant>, reqwest::Error> {
     let html = client.get(link).send().await?.text().await?;
-    for rant in scraper::rants::parse(&html) {
-        store.upsert_rant(&rant)?;
-    }
-    Ok(())
+    Ok(scraper::rants::parse(&html))
 }
 
 /// Feed items whose `published_at` is strictly after `last_check` — parsed

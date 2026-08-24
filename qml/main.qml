@@ -35,6 +35,7 @@ ApplicationWindow {
     property var favorites: []
     property var status: ({})
     property int progressStrip: -1
+    property bool deeplConfigured: false
 
     readonly property var theme: Theme {}
 
@@ -90,6 +91,15 @@ ApplicationWindow {
             window.progressStrip = body && body.strip_number ? body.strip_number : -1
         })
     }
+    // Only whether a key is set, not its value — RantsScreen just needs to
+    // know whether to offer translation at all (see its own doc comment).
+    // Re-called after Settings saves a new key so the Rants screen picks it
+    // up immediately, no restart needed.
+    function refreshDeeplConfigured() {
+        api.get("/config", function (body) {
+            window.deeplConfigured = !!(body && body.deepl_api_key)
+        })
+    }
     function refreshAll() {
         refreshChapters()
         refreshStrips()
@@ -97,6 +107,7 @@ ApplicationWindow {
         refreshFavorites()
         refreshStatus()
         refreshProgress()
+        refreshDeeplConfigured()
     }
 
     function isFavorite(number) {
@@ -223,6 +234,7 @@ ApplicationWindow {
                 id: rantsScreen
                 api: api
                 rants: window.rants
+                deeplConfigured: window.deeplConfigured
             }
 
             SettingsScreen {
@@ -230,6 +242,7 @@ ApplicationWindow {
                 guiCtrlApi: guiCtrlApi
                 localBaseUrl: window.baseUrl
                 localToken: window.apiToken
+                daemonConfigSaved: window.refreshDeeplConfigured
             }
         }
     }
