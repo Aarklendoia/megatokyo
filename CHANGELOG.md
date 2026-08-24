@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.1](https://github.com/Aarklendoia/megatokyo/compare/v0.3.0...v0.3.1) (2026-08-24)
+
+
+### Bug Fixes
+
+* **qml:** distinguish main-story chapters from bonus in the Gallery ([#20](https://github.com/Aarklendoia/megatokyo/issues/20)) ([9f20b8c](https://github.com/Aarklendoia/megatokyo/commit/9f20b8c94196b494ac232f63f167394b6e061ef7))
+* **qml:** show Settings save errors in red, not the same teal as success ([#22](https://github.com/Aarklendoia/megatokyo/issues/22)) ([7d6002e](https://github.com/Aarklendoia/megatokyo/commit/7d6002eeb8020022c479f212f889655ce2c3120a))
+
 ## [0.3.0](https://github.com/Aarklendoia/megatokyo/compare/v0.2.0...v0.3.0) (2026-08-24)
 
 
