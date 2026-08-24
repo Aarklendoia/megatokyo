@@ -91,7 +91,9 @@ pub async fn resolve(client: &reqwest::Client, strip: UnresolvedStrip) -> Option
 
 /// [`resolve`]'s actual logic, parameterized on the strip-image base URL so
 /// tests can point it at a local mock server instead of the real site.
-async fn resolve_against(
+/// `pub` (not `pub(crate)`) so `megatokyo-daemon`'s own poll-loop tests can
+/// use the same seam, matching `Translator::with_endpoint`'s pattern.
+pub async fn resolve_against(
     client: &reqwest::Client,
     strip: UnresolvedStrip,
     base_url: &str,

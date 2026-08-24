@@ -48,7 +48,15 @@ pub fn parse(xml: &[u8]) -> Result<Vec<FeedItem>, FeedError> {
 }
 
 pub async fn fetch(client: &reqwest::Client) -> Result<Vec<FeedItem>, FeedError> {
-    let bytes = client.get(FEED_URL).send().await?.bytes().await?;
+    fetch_at(client, FEED_URL).await
+}
+
+/// [`fetch`]'s actual logic, parameterized on the feed URL so tests (in
+/// this crate or `megatokyo-daemon`'s poll loop) can point it at a local
+/// mock server instead of the real site — same seam as
+/// `scraper::strips::resolve_against`/`Translator::with_endpoint`.
+pub async fn fetch_at(client: &reqwest::Client, url: &str) -> Result<Vec<FeedItem>, FeedError> {
+    let bytes = client.get(url).send().await?.bytes().await?;
     parse(&bytes)
 }
 
