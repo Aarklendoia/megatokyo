@@ -220,6 +220,16 @@ ApplicationWindow {
                 favorites: window.favorites
                 toggleFavorite: window.toggleFavorite
                 saveProgress: window.saveProgress
+                // Initial default only: landing on this tab straight from
+                // the sidebar (not via Dashboard's own "resume reading",
+                // which already calls openReader explicitly) should still
+                // pick up where the user left off. Any later manual
+                // navigation (goTo, the jump dropdown, openReader) assigns
+                // currentNumber directly, which breaks this binding for
+                // the rest of the session — exactly what we want, since a
+                // stale progressStrip refresh shouldn't yank the user back
+                // to an old strip mid-navigation.
+                currentNumber: window.progressStrip
             }
 
             GalleryScreen {
