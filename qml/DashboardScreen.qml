@@ -63,6 +63,7 @@ Item {
                         id: searchField
                         anchors.fill: parent
                         anchors.margins: 8
+                        padding: 0
                         background: null
                         color: theme.text
                         placeholderText: I18n.tr("dashboard.searchPlaceholder")

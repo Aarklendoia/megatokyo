@@ -178,6 +178,7 @@ Item {
                                 id: localUrlField
                                 anchors.fill: parent
                                 anchors.margins: 6
+                                padding: 0
                                 background: null
                                 color: theme.textDim
                                 font.family: theme.fontMono
@@ -207,6 +208,7 @@ Item {
                                 id: localTokenField
                                 anchors.fill: parent
                                 anchors.margins: 6
+                                padding: 0
                                 background: null
                                 color: theme.textDim
                                 font.family: theme.fontMono
@@ -243,6 +245,7 @@ Item {
                                 id: daemonPollField
                                 anchors.fill: parent
                                 anchors.margins: 6
+                                padding: 0
                                 background: null
                                 color: theme.text
                                 font.pixelSize: 12
@@ -267,6 +270,7 @@ Item {
                                 id: deeplField
                                 anchors.fill: parent
                                 anchors.margins: 6
+                                padding: 0
                                 background: null
                                 color: theme.text
                                 font.family: theme.fontMono
@@ -344,6 +348,7 @@ Item {
                             id: remoteUrlField
                             anchors.fill: parent
                             anchors.margins: 6
+                            padding: 0
                             background: null
                             color: theme.text
                             font.family: theme.fontMono
@@ -365,6 +370,7 @@ Item {
                             id: remoteTokenField
                             anchors.fill: parent
                             anchors.margins: 6
+                            padding: 0
                             background: null
                             color: theme.text
                             font.family: theme.fontMono
@@ -458,6 +464,7 @@ Item {
                                 id: guiPollField
                                 anchors.fill: parent
                                 anchors.margins: 6
+                                padding: 0
                                 background: null
                                 color: theme.text
                                 font.pixelSize: 12
