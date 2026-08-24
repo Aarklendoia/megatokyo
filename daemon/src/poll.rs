@@ -27,7 +27,7 @@ pub async fn run_once(client: &reqwest::Client, state: &AppState) {
     if let Err(err) = backfill_if_empty(client, &state.store).await {
         log::warn!("backfill failed: {err}");
     }
-    if let Err(err) = backfill_rants_if_empty(client, &state.store).await {
+    if let Err(err) = backfill_rants(client, &state.store).await {
         log::warn!("rant backfill failed: {err}");
     }
     state.backfilling.store(false, Ordering::Relaxed);
@@ -146,18 +146,19 @@ async fn resolve_and_store_strips(
 
 /// Backfills every rant that has ever existed, not just whatever the RSS
 /// feed still carries (5 at a time, verified live — see
-/// `scraper::rant_archive`'s doc comment). Runs once: after the first pass
-/// fills the `rants` table, every later rant is caught incrementally by
-/// `check_feed` below as it shows up in the feed, so there's no need to
-/// re-walk 1000+ archive entries on every poll cycle.
-async fn backfill_rants_if_empty(
+/// `scraper::rant_archive`'s doc comment). Runs every cycle, same as
+/// `check_feed` below, rather than gating on "the rants table is empty":
+/// a daemon that had already run *before* this existed has a handful of
+/// rants from the old feed-only path, which would make an empty-table
+/// check wrongly conclude "already fully backfilled" and skip it forever.
+/// [`resolve_and_store_rants`] already skips numbers already in the
+/// store, so a cycle after the first (full) one costs one archive fetch
+/// plus a fast local lookup per number — no HTTP fetches at all once
+/// nothing new has been added to the archive.
+async fn backfill_rants(
     client: &reqwest::Client,
     store: &Store,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    if store.has_any_rant()? {
-        return Ok(());
-    }
-    log::info!("no rants in the database yet, running the initial rant backfill");
     let html = client
         .get(scraper::rant_archive::RANT_ARCHIVE_URL)
         .send()
@@ -165,7 +166,6 @@ async fn backfill_rants_if_empty(
         .text()
         .await?;
     let numbers = scraper::rant_archive::parse_numbers(&html);
-    log::info!("backfilling up to {} rants", numbers.len());
     resolve_and_store_rants(client, store, numbers).await;
     Ok(())
 }
