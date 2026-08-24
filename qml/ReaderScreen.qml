@@ -21,8 +21,15 @@ Item {
 
     readonly property var theme: Theme {}
 
+    // Main-story chapters are stored under category "C-<n>" — including the
+    // prologue, "C-0", which is a real part of the story despite parsing to
+    // `number: 0` (see core::scraper::chapters's doc comment). Filtering on
+    // `number > 0` alone would misfile it as bonus content, along with the
+    // genuinely bonus sections (One Shot Episode, Grand Theft Colo, ...)
+    // that also parse to number 0 — category prefix is the one signal that
+    // actually distinguishes the two.
     readonly property var mainStoryCategories: chapters.filter(function (c) {
-        return c.number > 0
+        return c.category.indexOf("C-") === 0
     }).map(function (c) {
         return c.category
     })
@@ -49,9 +56,10 @@ Item {
 
     readonly property var jumpModel: {
         var items = chapters.map(function (c) {
+            var isMainStory = c.category.indexOf("C-") === 0
             return {
                 category: c.category,
-                label: (c.number > 0 ? I18n.tr("reader.jumpChapter") + " " + c.number : I18n.tr("reader.jumpBonus")) + " — " + c.title
+                label: (isMainStory ? I18n.tr("reader.jumpChapter") + " " + c.number : I18n.tr("reader.jumpBonus")) + " — " + c.title
             }
         })
         items.push({ category: "__favorites__", label: I18n.tr("reader.jumpFavorites") })

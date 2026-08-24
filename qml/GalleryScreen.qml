@@ -18,18 +18,21 @@ Item {
     // "all" | "favorites" | a chapter's category string
     property string selectedFilter: "all"
 
-    // Chapters with a non-zero number are the main story; bonus/side
-    // sections parse to category number 0 (see core::scraper::chapters,
-    // and ReaderScreen's own mainStoryCategories) — numbered here and
-    // grouped ahead of a "Bonus" divider so the two are easy to tell
-    // apart at a glance, not just by title.
+    // Main-story chapters are stored under category "C-<n>", including the
+    // prologue ("C-0", number 0) — see core::scraper::chapters's doc
+    // comment and ReaderScreen's own mainStoryCategories, which hit the
+    // same pitfall: filtering on `number > 0` instead of the category
+    // prefix misfiles the prologue as bonus content, since it shares
+    // number 0 with the genuinely bonus sections (One Shot Episode, Grand
+    // Theft Colo, ...). Numbered here and grouped ahead of a "Bonus"
+    // divider so the two read apart at a glance, not just by title.
     readonly property var mainChapters: chapters.filter(function (c) {
-        return c.number > 0
+        return c.category.indexOf("C-") === 0
     }).slice().sort(function (a, b) {
         return a.number - b.number
     })
     readonly property var bonusChapters: chapters.filter(function (c) {
-        return c.number === 0
+        return c.category.indexOf("C-") !== 0
     })
 
     readonly property var chipModel: {
