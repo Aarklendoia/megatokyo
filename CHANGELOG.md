@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/Aarklendoia/megatokyo/compare/v0.6.0...v0.7.0) (2026-08-24)
+
+
+### Features
+
+* **gui:** persist the Reader's "All strips"/"Main story only" toggle ([#45](https://github.com/Aarklendoia/megatokyo/issues/45)) ([f6ec82e](https://github.com/Aarklendoia/megatokyo/commit/f6ec82e195ef708ca2f80c6f67cdbac05480a9b5))
+
 ## [0.6.0](https://github.com/Aarklendoia/megatokyo/compare/v0.5.1...v0.6.0) (2026-08-24)
 
 
