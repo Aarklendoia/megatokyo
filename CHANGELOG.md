@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.0](https://github.com/Aarklendoia/megatokyo/compare/v0.4.0...v0.5.0) (2026-08-24)
+
+
+### Features
+
+* **qml:** keyboard and click-to-turn-page navigation in the Reader ([#31](https://github.com/Aarklendoia/megatokyo/issues/31)) ([d79b145](https://github.com/Aarklendoia/megatokyo/commit/d79b14548b334e0a01d3eb18eb1c6d8e19422fb2))
+* **qml:** make Gallery thumbnails' favorite badge interactive ([#32](https://github.com/Aarklendoia/megatokyo/issues/32)) ([7917300](https://github.com/Aarklendoia/megatokyo/commit/7917300e8b1e92010c480b97a035f37d980fc102))
+* **qml:** put main-story and bonus chips on two separate rows ([#33](https://github.com/Aarklendoia/megatokyo/issues/33)) ([1d20976](https://github.com/Aarklendoia/megatokyo/commit/1d209763290a9f4d934b4eb3971151df9373cb0c))
+
+
+### Bug Fixes
+
+* **qml:** Reader tab defaults to the last-read strip ([#26](https://github.com/Aarklendoia/megatokyo/issues/26)) ([6be5c10](https://github.com/Aarklendoia/megatokyo/commit/6be5c1020107ce7d4811ca09bcfb7174442fca29))
+
 ## [0.4.0](https://github.com/Aarklendoia/megatokyo/compare/v0.3.1...v0.4.0) (2026-08-24)
 
 
