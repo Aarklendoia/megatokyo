@@ -3,7 +3,7 @@
         "navHome": "Главная",
         "navReader": "Чтение",
         "navGallery": "Галерея",
-        "navRants": "Рассказы",
+        "navRants": "Rants",
         "navSettings": "Настройки",
         "statusBackfilling": "Первичная синхронизация…",
         "statusUpToDate": "Актуально"
@@ -34,7 +34,7 @@
         "sectionBonus": "Бонус"
     },
     "rants": {
-        "title": "Рассказы",
+        "title": "Rants",
         "loadingTranslation": "Перевод…"
     },
     "settings": {

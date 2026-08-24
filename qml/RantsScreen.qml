@@ -86,7 +86,14 @@ Item {
         spacing: 20
 
         ColumnLayout {
+            // minimum/maximum, not just preferred: a RowLayout is free to
+            // compress an item below its preferred width when space is
+            // tight (narrower window, a long selected title on the right)
+            // — pinning all three to 220 makes the list panel genuinely
+            // fixed-width rather than just usually-220.
             Layout.preferredWidth: 220
+            Layout.minimumWidth: 220
+            Layout.maximumWidth: 220
             Layout.fillHeight: true
             spacing: 12
 
