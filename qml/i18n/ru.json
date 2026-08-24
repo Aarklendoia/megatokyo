@@ -35,6 +35,7 @@
     },
     "rants": {
         "title": "Rants",
+        "searchPlaceholder": "Поиск рассказа (по названию или номеру)",
         "loadingTranslation": "Перевод…"
     },
     "settings": {

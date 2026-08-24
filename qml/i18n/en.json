@@ -35,6 +35,7 @@
     },
     "rants": {
         "title": "Rants",
+        "searchPlaceholder": "Search a rant (title or number)",
         "loadingTranslation": "Translating…"
     },
     "settings": {

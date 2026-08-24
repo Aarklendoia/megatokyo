@@ -35,6 +35,7 @@
     },
     "rants": {
         "title": "Rants",
+        "searchPlaceholder": "ラントを検索(タイトルまたは番号)",
         "loadingTranslation": "翻訳中…"
     },
     "settings": {

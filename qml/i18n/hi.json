@@ -35,6 +35,7 @@
     },
     "rants": {
         "title": "Rants",
+        "searchPlaceholder": "Rant खोजें (शीर्षक या नंबर)",
         "loadingTranslation": "अनुवाद हो रहा है…"
     },
     "settings": {

@@ -35,6 +35,7 @@
     },
     "rants": {
         "title": "Rants",
+        "searchPlaceholder": "搜索 Rants(标题或编号)",
         "loadingTranslation": "翻译中…"
     },
     "settings": {
