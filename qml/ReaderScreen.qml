@@ -10,6 +10,7 @@ Item {
     id: root
 
     property var api: null
+    property var guiCtrlApi: null
     property var strips: []
     property var chapters: []
     property var favorites: []
@@ -18,6 +19,11 @@ Item {
 
     property int currentNumber: -1
     property bool mainStoryOnly: false
+    // Guards the very first mainStoryOnly assignment (from loadMainStoryOnly
+    // below) from immediately posting the value straight back to the GUI's
+    // own config — it was just read from there, writing it back is a no-op
+    // that would only race the initial GET.
+    property bool mainStoryOnlyLoaded: false
 
     readonly property var theme: Theme {}
 
@@ -97,7 +103,14 @@ Item {
     // than silently keep showing a strip the active filter excludes.
     // Falls back to the first match if the current one comes before
     // everything in the new list (e.g. mid-prologue bonus content).
+    //
+    // Also persists the toggle to this GUI's own config (see
+    // loadMainStoryOnly below), skipped for the one assignment that
+    // *loads* the persisted value in the first place.
     onMainStoryOnlyChanged: {
+        if (mainStoryOnlyLoaded && root.guiCtrlApi)
+            root.guiCtrlApi.post("/gui-config?main_story_only=" + (mainStoryOnly ? "true" : "false"))
+
         if (currentIndex !== -1)
             return
         var list = filteredStrips
@@ -111,6 +124,29 @@ Item {
         }
         currentNumber = candidate.number
     }
+
+    // Loads the persisted "All strips"/"Main story only" toggle once
+    // guiCtrlApi is ready (see main.qml's verified Component.onCompleted
+    // ordering — the window's own onCompleted, which resolves
+    // guiCtrlApi's real port/token, runs before this screen's). Sets
+    // mainStoryOnlyLoaded first so the onMainStoryOnlyChanged handler
+    // above knows this particular assignment came from the load, not a
+    // user toggle, and doesn't immediately post it straight back.
+    function loadMainStoryOnly() {
+        if (!guiCtrlApi)
+            return
+        guiCtrlApi.get("/gui-config", function (body) {
+            if (body && body.main_story_only)
+                root.mainStoryOnly = true
+            mainStoryOnlyLoaded = true
+        }, function () {
+            // Couldn't read the persisted value — still let later toggles
+            // persist rather than silently never saving for the rest of
+            // this session.
+            mainStoryOnlyLoaded = true
+        })
+    }
+    Component.onCompleted: loadMainStoryOnly()
 
     ColumnLayout {
         anchors.fill: parent
