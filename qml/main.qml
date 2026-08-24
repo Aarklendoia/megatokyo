@@ -230,6 +230,7 @@ ApplicationWindow {
             ReaderScreen {
                 id: readerScreen
                 api: api
+                guiCtrlApi: guiCtrlApi
                 strips: window.strips
                 chapters: window.chapters
                 favorites: window.favorites

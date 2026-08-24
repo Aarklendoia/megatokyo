@@ -79,11 +79,12 @@ fn handle_connection(mut stream: TcpStream, expected_token: &str) {
 
 fn config_json(config: &GuiConfig) -> String {
     format!(
-        "{{\"remote_base_url\":\"{}\",\"remote_api_token\":\"{}\",\"poll_interval_minutes\":{},\"notifications_enabled\":{}}}",
+        "{{\"remote_base_url\":\"{}\",\"remote_api_token\":\"{}\",\"poll_interval_minutes\":{},\"notifications_enabled\":{},\"main_story_only\":{}}}",
         json_escape(&config.remote_base_url),
         json_escape(&config.remote_api_token),
         config.poll_interval_minutes,
         config.notifications_enabled,
+        config.main_story_only,
     )
 }
 
@@ -118,6 +119,9 @@ fn route_gui_config(req: &str, path: &std::path::Path) -> (&'static str, String)
             if let Some(v) = extract_query_param(req, "notifications_enabled") {
                 config.notifications_enabled = v == "true";
             }
+            if let Some(v) = extract_query_param(req, "main_story_only") {
+                config.main_story_only = v == "true";
+            }
             match config.save(path) {
                 Ok(()) => ("200 OK", config_json(&config)),
                 Err(err) => (
@@ -150,6 +154,19 @@ mod tests {
         assert_eq!(status, "200 OK");
         assert!(body.contains("\"poll_interval_minutes\":15"));
         assert!(body.contains("\"notifications_enabled\":true"));
+        assert!(body.contains("\"main_story_only\":false"));
+    }
+
+    #[test]
+    fn route_gui_config_post_persists_main_story_only() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("config.toml");
+
+        let (status, body) =
+            route_gui_config("POST /gui-config?main_story_only=true HTTP/1.1\r\n", &path);
+        assert_eq!(status, "200 OK");
+        assert!(body.contains("\"main_story_only\":true"));
+        assert!(GuiConfig::load(&path).main_story_only);
     }
 
     #[test]

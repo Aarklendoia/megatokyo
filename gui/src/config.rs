@@ -25,6 +25,12 @@ pub struct GuiConfig {
     pub remote_api_token: String,
     pub poll_interval_minutes: u64,
     pub notifications_enabled: bool,
+    /// The Reader's "All strips" / "Main story only" toggle — a per-install
+    /// UI preference, not daemon state: unlike favorites/reading progress,
+    /// which are meant to follow the user across every client of a shared
+    /// remote daemon, this stays local to whichever GUI installation set
+    /// it.
+    pub main_story_only: bool,
 }
 
 impl Default for GuiConfig {
@@ -36,6 +42,7 @@ impl Default for GuiConfig {
             // daemon_link::poll_interval_minutes's doc comment.
             poll_interval_minutes: 15,
             notifications_enabled: true,
+            main_story_only: false,
         }
     }
 }
@@ -57,6 +64,9 @@ impl GuiConfig {
             notifications_enabled: read_string(&contents, "notifications_enabled")
                 .map(|v| v == "true")
                 .unwrap_or(defaults.notifications_enabled),
+            main_story_only: read_string(&contents, "main_story_only")
+                .map(|v| v == "true")
+                .unwrap_or(defaults.main_story_only),
         }
     }
 
@@ -65,11 +75,12 @@ impl GuiConfig {
             std::fs::create_dir_all(parent)?;
         }
         let contents = format!(
-            "remote_base_url = \"{}\"\nremote_api_token = \"{}\"\npoll_interval_minutes = {}\nnotifications_enabled = {}\n",
+            "remote_base_url = \"{}\"\nremote_api_token = \"{}\"\npoll_interval_minutes = {}\nnotifications_enabled = {}\nmain_story_only = {}\n",
             escape(&self.remote_base_url),
             escape(&self.remote_api_token),
             self.poll_interval_minutes,
             self.notifications_enabled,
+            self.main_story_only,
         );
         std::fs::write(path, contents)
     }
@@ -133,6 +144,7 @@ mod tests {
             remote_api_token: "abc123".to_string(),
             poll_interval_minutes: 30,
             notifications_enabled: false,
+            main_story_only: true,
         };
         config.save(&path).unwrap();
         assert_eq!(GuiConfig::load(&path), config);
@@ -162,5 +174,6 @@ mod tests {
         assert_eq!(config.remote_base_url, "https://x");
         assert_eq!(config.poll_interval_minutes, 15);
         assert!(config.notifications_enabled);
+        assert!(!config.main_story_only);
     }
 }
