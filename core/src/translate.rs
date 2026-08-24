@@ -91,8 +91,8 @@ impl Translator {
         let response: DeeplResponse = self
             .client
             .post(self.endpoint())
+            .header("Authorization", format!("DeepL-Auth-Key {}", self.api_key))
             .form(&[
-                ("auth_key", self.api_key.as_str()),
                 ("text", html),
                 ("target_lang", target_lang),
                 ("tag_handling", "html"),
@@ -143,7 +143,7 @@ pub async fn get_translated_rant(
 mod tests {
     use super::*;
     use crate::domain::Rant;
-    use wiremock::matchers::method;
+    use wiremock::matchers::{header, method};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
     fn sample_rant() -> Rant {
@@ -176,6 +176,32 @@ mod tests {
     async fn translate_html_posts_the_text_and_returns_the_first_translation() {
         let server = MockServer::start().await;
         Mock::given(method("POST"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "translations": [{"detected_source_language": "EN", "text": "<p>bonjour</p>"}]
+            })))
+            .mount(&server)
+            .await;
+
+        let translator = Translator::with_endpoint("test-key".to_string(), server.uri());
+        let translated = translator
+            .translate_html("<p>hello</p>", "FR")
+            .await
+            .unwrap();
+        assert_eq!(translated, "<p>bonjour</p>");
+    }
+
+    /// DeepL's API rejects requests that send the key as an `auth_key` form
+    /// field — verified live against a real key (403 "Missing Authorization
+    /// header"): it must go in an `Authorization: DeepL-Auth-Key <key>`
+    /// header instead (see DeepL's own quickstart docs). This was the
+    /// actual bug behind translation silently failing for every user with a
+    /// real key, caught only by testing against the live API — this test
+    /// pins the fix down so it can't regress back to the form-field form.
+    #[tokio::test]
+    async fn translate_html_sends_the_key_as_an_authorization_header() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(header("Authorization", "DeepL-Auth-Key test-key"))
             .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
                 "translations": [{"detected_source_language": "EN", "text": "<p>bonjour</p>"}]
             })))
