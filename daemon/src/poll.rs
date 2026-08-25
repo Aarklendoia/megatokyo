@@ -33,8 +33,11 @@ const RANT_LINK_BASE_URL: &str = "https://megatokyo.com/rant";
 
 /// One full pass: backfill if the store is empty, then a feed diff either
 /// way (a fresh backfill's own scrape can itself lag behind the feed by the
-/// time it finishes, so this isn't an `else`).
-pub async fn run_once(client: &reqwest::Client, state: &AppState) {
+/// time it finishes, so this isn't an `else`). Takes `&Arc<AppState>`
+/// (rather than plain `&AppState`, though it only ever reads through the
+/// `Arc`'s `Deref`) so a new-item push send can clone it into a
+/// `tokio::spawn`ed task.
+pub async fn run_once(client: &reqwest::Client, state: &Arc<AppState>) {
     state.backfilling.store(true, Ordering::Relaxed);
     if let Err(err) = backfill_if_empty(client, &state.store).await {
         log::warn!("backfill failed: {err}");
@@ -44,8 +47,16 @@ pub async fn run_once(client: &reqwest::Client, state: &AppState) {
     }
     state.backfilling.store(false, Ordering::Relaxed);
 
-    if let Err(err) = check_feed(client, &state.store).await {
-        log::warn!("feed check failed: {err}");
+    match check_feed(client, &state.store).await {
+        Ok(new_items) if !new_items.is_empty() => {
+            // Fire-and-forget: a slow/unreachable push service must never
+            // hold up the next poll cycle. `send_to_all` only logs on
+            // failure — see its own doc comment.
+            let state = state.clone();
+            tokio::spawn(async move { crate::push::send_to_all(&state, &new_items).await });
+        }
+        Ok(_) => {}
+        Err(err) => log::warn!("feed check failed: {err}"),
     }
 }
 
@@ -261,11 +272,15 @@ fn store_rants(store: &Store, rants: Vec<Rant>) {
 }
 
 /// Diffs the RSS feed against the stored `checking` checkpoint, backfills
-/// any strip/rant newer than the checkpoint, and advances it.
+/// any strip/rant newer than the checkpoint, and advances it. Returns the
+/// new items (newest-first) so [`run_once`] can push-notify about them —
+/// `check_feed_at` itself stays free of any push/`AppState` concern, same
+/// separation as the rest of this module (only `run_once` touches
+/// `AppState`).
 async fn check_feed(
     client: &reqwest::Client,
     store: &Store,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<Vec<feed::FeedItem>, Box<dyn std::error::Error>> {
     check_feed_at(
         client,
         store,
@@ -285,7 +300,7 @@ async fn check_feed_at(
     feed_url: &str,
     archive_url: &str,
     strip_image_base_url: &str,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<Vec<feed::FeedItem>, Box<dyn std::error::Error>> {
     let items = feed::fetch_at(client, feed_url).await?;
     let mut checking = store.get_checking()?;
     let last_check = checking.last_check.clone().unwrap_or_default();
@@ -318,7 +333,7 @@ async fn check_feed_at(
 
     apply_checkpoint(&mut checking, &new_items);
     store.save_checking(&checking)?;
-    Ok(())
+    Ok(new_items.into_iter().cloned().collect())
 }
 
 /// Advances `checking`'s per-kind last-seen number to the highest number

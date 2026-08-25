@@ -23,3 +23,41 @@ self.addEventListener("fetch", (event) => {
     caches.match(event.request).then((cached) => cached || fetch(event.request))
   );
 });
+
+// Payload shape is `{"title": ..., "url": ...}` — see daemon/src/push.rs's
+// `send_one`. `event.waitUntil` keeps the service worker alive until the
+// notification is actually shown; without it the browser can kill the
+// worker mid-`showNotification` on some platforms.
+self.addEventListener("push", (event) => {
+  const data = event.data ? event.data.json() : {};
+  const title = data.title || "Megatokyo";
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: data.url || "",
+      icon: "/icon.svg",
+      data: { url: data.url || "/" },
+    })
+  );
+});
+
+// Focuses an already-open client on the notification's URL rather than
+// always opening a new tab/window.
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data && event.notification.data.url;
+  if (!url) return;
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clients) => {
+        for (const client of clients) {
+          if (client.url === url && "focus" in client) {
+            return client.focus();
+          }
+        }
+        if (self.clients.openWindow) {
+          return self.clients.openWindow(url);
+        }
+      })
+  );
+});

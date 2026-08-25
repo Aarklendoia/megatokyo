@@ -14,7 +14,7 @@ use std::sync::Mutex;
 
 use rusqlite::{params, Connection, OptionalExtension};
 
-use crate::domain::{Chapter, Checking, Favorite, Rant, Strip};
+use crate::domain::{Chapter, Checking, Favorite, PushSubscription, Rant, Strip};
 
 #[derive(Debug, thiserror::Error)]
 pub enum StoreError {
@@ -103,6 +103,12 @@ impl Store {
             CREATE TABLE IF NOT EXISTS reading_progress (
                 id INTEGER PRIMARY KEY CHECK (id = 1),
                 strip_number INTEGER NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS push_subscriptions (
+                endpoint TEXT PRIMARY KEY,
+                p256dh TEXT NOT NULL,
+                auth TEXT NOT NULL,
+                created_at TEXT NOT NULL
             );
             ",
         )?;
@@ -379,6 +385,52 @@ impl Store {
         Ok(favorites)
     }
 
+    // -- push subscriptions ---------------------------------------------------
+
+    /// Idempotent: re-subscribing with the same endpoint (e.g. the browser
+    /// re-registering an already-known subscription) just keeps the
+    /// original `created_at`, same reasoning as [`Store::add_favorite`].
+    pub fn add_push_subscription(&self, subscription: &PushSubscription) -> Result<()> {
+        self.conn.lock().unwrap().execute(
+            "INSERT INTO push_subscriptions (endpoint, p256dh, auth, created_at)
+             VALUES (?1, ?2, ?3, ?4)
+             ON CONFLICT(endpoint) DO NOTHING",
+            params![
+                subscription.endpoint,
+                subscription.p256dh,
+                subscription.auth,
+                subscription.created_at
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn remove_push_subscription(&self, endpoint: &str) -> Result<()> {
+        self.conn.lock().unwrap().execute(
+            "DELETE FROM push_subscriptions WHERE endpoint = ?1",
+            params![endpoint],
+        )?;
+        Ok(())
+    }
+
+    pub fn all_push_subscriptions(&self) -> Result<Vec<PushSubscription>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT endpoint, p256dh, auth, created_at FROM push_subscriptions ORDER BY created_at",
+        )?;
+        let subscriptions = stmt
+            .query_map([], |row| {
+                Ok(PushSubscription {
+                    endpoint: row.get(0)?,
+                    p256dh: row.get(1)?,
+                    auth: row.get(2)?,
+                    created_at: row.get(3)?,
+                })
+            })?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        Ok(subscriptions)
+    }
+
     // -- reading progress -----------------------------------------------------
 
     pub fn get_reading_progress(&self) -> Result<Option<i32>> {
@@ -542,6 +594,69 @@ mod tests {
                 strip_number: 1619,
                 added_at: "2026-08-21T00:00:00Z".to_string()
             }]
+        );
+    }
+
+    fn sample_subscription(endpoint: &str, created_at: &str) -> PushSubscription {
+        PushSubscription {
+            endpoint: endpoint.to_string(),
+            p256dh: "p256dh-key".to_string(),
+            auth: "auth-secret".to_string(),
+            created_at: created_at.to_string(),
+        }
+    }
+
+    #[test]
+    fn push_subscriptions_round_trip_oldest_first() {
+        let store = Store::open_in_memory().unwrap();
+        store
+            .add_push_subscription(&sample_subscription(
+                "https://push.example/b",
+                "2026-08-22T00:00:00Z",
+            ))
+            .unwrap();
+        store
+            .add_push_subscription(&sample_subscription(
+                "https://push.example/a",
+                "2026-08-21T00:00:00Z",
+            ))
+            .unwrap();
+        assert_eq!(
+            store
+                .all_push_subscriptions()
+                .unwrap()
+                .iter()
+                .map(|s| s.endpoint.clone())
+                .collect::<Vec<_>>(),
+            vec!["https://push.example/a", "https://push.example/b"]
+        );
+        store
+            .remove_push_subscription("https://push.example/a")
+            .unwrap();
+        assert_eq!(store.all_push_subscriptions().unwrap().len(), 1);
+    }
+
+    #[test]
+    fn resubscribing_the_same_endpoint_keeps_the_original_created_at() {
+        let store = Store::open_in_memory().unwrap();
+        store
+            .add_push_subscription(&sample_subscription(
+                "https://push.example/a",
+                "2026-08-21T00:00:00Z",
+            ))
+            .unwrap();
+        store
+            .add_push_subscription(&sample_subscription(
+                "https://push.example/a",
+                "2026-08-22T00:00:00Z",
+            ))
+            .unwrap();
+        assert_eq!(
+            store.all_push_subscriptions().unwrap(),
+            vec![sample_subscription(
+                "https://push.example/a",
+                "2026-08-21T00:00:00Z"
+            )]
         );
     }
 

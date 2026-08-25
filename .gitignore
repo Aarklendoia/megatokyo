@@ -8,9 +8,14 @@ Cargo.lock
 /pwa/dist/
 
 # Vendored deps for offline Launchpad/PPA builds (regenerated per release) —
-# not meant to live in git.
+# not meant to live in git. `/.cargo/*` + a negation (not a bare `/.cargo/`)
+# so `.cargo/audit.toml` — cargo-audit's actual config discovery path, see
+# audit.toml's own doc comment — can be carved out and tracked; a bare
+# `/.cargo/` would exclude the whole directory as a unit, and git doesn't
+# apply negation patterns to files inside an already-excluded directory.
 /vendor/
-/.cargo/
+/.cargo/*
+!/.cargo/audit.toml
 
 # IDEs
 .vscode/

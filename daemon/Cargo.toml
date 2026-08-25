@@ -8,6 +8,8 @@ repository.workspace = true
 description = "Background service: scrapes megatokyo.com, caches strips/rants/translations, serves the HTTP API"
 
 [dependencies]
+base64 = "0.22"
+bytes = "1"
 chrono = { version = "0.4.45", default-features = false, features = ["clock"] }
 env_logger = "0.11.11"
 log = "0.4.33"
@@ -18,6 +20,11 @@ serde_json = "1.0.151"
 thiserror = "2.0.20"
 tokio = { version = "1.53.1", features = ["full"] }
 toml = "1.1.4"
+# default-features = false: skips the isahc/hyper-tls (OpenSSL-based) HTTP
+# clients this crate offers — we only use its VAPID signing + payload
+# encryption (message-building) API and send via our own rustls-based
+# `reqwest::Client`, matching the reqwest rustls-tls choice above.
+web-push = { version = "0.11.0", default-features = false }
 
 [dev-dependencies]
 tempfile = "3.27.0"

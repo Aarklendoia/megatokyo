@@ -1,9 +1,0 @@
-# cargo-audit config (.github/workflows/quality.yml's `security` job).
-#
-# Advisories are deliberately ignored here only when they have no upstream
-# fix yet and have been consciously accepted — never to silence a warning
-# that could just be fixed by bumping a dependency. Each entry needs the
-# RUSTSEC id, a one-line reason, and a revisit date; remove the entry once a
-# fixed version is available.
-[advisories]
-ignore = []

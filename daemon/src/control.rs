@@ -214,6 +214,9 @@ async fn route(req: &str, path: &str, state: &AppState) -> Response {
             Response::ok_json(&serde_json::json!({"ok": true}))
         }
         "/config" => route_config(req, state).await,
+        "/push/vapid-public-key" => route_vapid_public_key(state).await,
+        "/push/subscribe" => route_push_subscribe(req, state).await,
+        "/push/unsubscribe" => route_push_unsubscribe(req, state),
         _ => Response::not_found(),
     }
 }
@@ -396,6 +399,7 @@ async fn route_config(req: &str, state: &AppState) -> Response {
             Response::ok_json(&serde_json::json!({
                 "deepl_api_key": config.deepl_api_key,
                 "poll_interval_minutes": config.poll_interval_minutes,
+                "vapid_subject": config.vapid_subject,
             }))
         }
         "POST" => {
@@ -413,15 +417,71 @@ async fn route_config(req: &str, state: &AppState) -> Response {
                     }
                 }
             }
+            if let Some(subject) = extract_query_param(req, "vapid_subject") {
+                config.vapid_subject = subject;
+            }
             match config.save(&state.config_path) {
                 Ok(()) => Response::ok_json(&serde_json::json!({
                     "deepl_api_key": config.deepl_api_key,
                     "poll_interval_minutes": config.poll_interval_minutes,
+                    "vapid_subject": config.vapid_subject,
                 })),
                 Err(err) => Response::server_error(&err.to_string()),
             }
         }
         _ => Response::not_found(),
+    }
+}
+
+/// Public — no secret involved, just the raw bytes a browser's
+/// `PushManager.subscribe({applicationServerKey})` needs. Serving it from
+/// the daemon instead of hardcoding it in the PWA build means the PWA never
+/// needs rebuilding when the daemon's VAPID keypair changes (or when a
+/// client points at a different daemon entirely).
+async fn route_vapid_public_key(state: &AppState) -> Response {
+    let config = state.config.read().await;
+    if config.vapid_public_key.is_empty() {
+        return Response::server_error("VAPID is not configured on this daemon");
+    }
+    Response::ok_json(&serde_json::json!({ "vapid_public_key": config.vapid_public_key }))
+}
+
+/// `POST /push/subscribe?endpoint=<url-encoded>&p256dh=<base64url>&auth=<base64url>` —
+/// query params rather than a JSON body, matching every other route here:
+/// this hand-rolled server has no JSON-body-parsing plumbing (every existing
+/// `POST`, e.g. `route_favorites`/`route_config`, reads query params only),
+/// and adding one just for this route would be new infrastructure for a
+/// single use. The three fields are exactly what a browser's
+/// `PushSubscription.toJSON()` gives the client (`endpoint`, `keys.p256dh`,
+/// `keys.auth`), just flattened into the URL.
+async fn route_push_subscribe(req: &str, state: &AppState) -> Response {
+    let (Some(endpoint), Some(p256dh), Some(auth)) = (
+        extract_query_param(req, "endpoint"),
+        extract_query_param(req, "p256dh"),
+        extract_query_param(req, "auth"),
+    ) else {
+        return Response::bad_request("endpoint, p256dh and auth are all required");
+    };
+
+    let subscription = megatokyo_core::domain::PushSubscription {
+        endpoint,
+        p256dh,
+        auth,
+        created_at: chrono::Utc::now().to_rfc3339(),
+    };
+    match state.store.add_push_subscription(&subscription) {
+        Ok(()) => Response::ok_json(&serde_json::json!({"ok": true})),
+        Err(err) => Response::server_error(&err.to_string()),
+    }
+}
+
+fn route_push_unsubscribe(req: &str, state: &AppState) -> Response {
+    let Some(endpoint) = extract_query_param(req, "endpoint") else {
+        return Response::bad_request("missing endpoint");
+    };
+    match state.store.remove_push_subscription(&endpoint) {
+        Ok(()) => Response::ok_json(&serde_json::json!({"ok": true})),
+        Err(err) => Response::server_error(&err.to_string()),
     }
 }
 
@@ -431,11 +491,15 @@ mod tests {
     use megatokyo_core::domain::{Chapter, Rant};
 
     fn test_config() -> Config {
+        let (vapid_private_key, vapid_public_key) = crate::push::generate_vapid_keypair();
         Config {
             bind: "127.0.0.1:0".to_string(),
             api_token: "test-token".to_string(),
             deepl_api_key: String::new(),
             poll_interval_minutes: 15,
+            vapid_private_key,
+            vapid_public_key,
+            vapid_subject: String::new(),
         }
     }
 
@@ -614,6 +678,62 @@ mod tests {
         let response = route("GET /favorites HTTP/1.1\r\n", "/favorites", &state).await;
         let body: serde_json::Value = serde_json::from_slice(&response.body).unwrap();
         assert_eq!(body.as_array().unwrap().len(), 0);
+    }
+
+    #[tokio::test]
+    async fn vapid_public_key_route_reports_the_configured_key() {
+        let state = state();
+        let expected = state.config.read().await.vapid_public_key.clone();
+
+        let response = route(
+            "GET /push/vapid-public-key HTTP/1.1\r\n",
+            "/push/vapid-public-key",
+            &state,
+        )
+        .await;
+
+        assert_eq!(response.status, "200 OK");
+        let body: serde_json::Value = serde_json::from_slice(&response.body).unwrap();
+        assert_eq!(body["vapid_public_key"], expected);
+    }
+
+    #[tokio::test]
+    async fn push_subscriptions_can_be_added_and_removed() {
+        let state = state();
+        let response = route(
+            "POST /push/subscribe?endpoint=https%3A%2F%2Fpush.example%2Fa&p256dh=key&auth=secret HTTP/1.1\r\n",
+            "/push/subscribe",
+            &state,
+        )
+        .await;
+        assert_eq!(response.status, "200 OK");
+
+        let subscriptions = state.store.all_push_subscriptions().unwrap();
+        assert_eq!(subscriptions.len(), 1);
+        assert_eq!(subscriptions[0].endpoint, "https://push.example/a");
+        assert_eq!(subscriptions[0].p256dh, "key");
+        assert_eq!(subscriptions[0].auth, "secret");
+
+        let response = route(
+            "POST /push/unsubscribe?endpoint=https%3A%2F%2Fpush.example%2Fa HTTP/1.1\r\n",
+            "/push/unsubscribe",
+            &state,
+        )
+        .await;
+        assert_eq!(response.status, "200 OK");
+        assert!(state.store.all_push_subscriptions().unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn push_subscribe_requires_all_three_fields() {
+        let state = state();
+        let response = route(
+            "POST /push/subscribe?endpoint=https%3A%2F%2Fpush.example%2Fa HTTP/1.1\r\n",
+            "/push/subscribe",
+            &state,
+        )
+        .await;
+        assert_eq!(response.status, "400 Bad Request");
     }
 
     #[tokio::test]
