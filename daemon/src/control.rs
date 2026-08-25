@@ -509,7 +509,9 @@ mod tests {
         let bytes = response.into_bytes();
         let text = String::from_utf8(bytes).unwrap();
         assert!(text.contains("Access-Control-Allow-Origin: *"));
-        assert!(text.contains(&format!("Access-Control-Allow-Headers: {TOKEN_HEADER}, Content-Type")));
+        assert!(text.contains(&format!(
+            "Access-Control-Allow-Headers: {TOKEN_HEADER}, Content-Type"
+        )));
     }
 
     #[tokio::test]

@@ -18,5 +18,8 @@ pub async fn fetch_chapters(base_url: &str, token: &str) -> Result<Vec<Chapter>,
         return Err(format!("daemon returned {}", response.status()));
     }
 
-    response.json::<Vec<Chapter>>().await.map_err(|err| err.to_string())
+    response
+        .json::<Vec<Chapter>>()
+        .await
+        .map_err(|err| err.to_string())
 }

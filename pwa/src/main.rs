@@ -30,7 +30,11 @@ fn App() -> impl IntoView {
         spawn_local(async move {
             let result = daemon_client::fetch_chapters(&base_url, &token)
                 .await
-                .map(|chs| chs.into_iter().map(|c| format!("#{} — {}", c.number, c.title)).collect());
+                .map(|chs| {
+                    chs.into_iter()
+                        .map(|c| format!("#{} — {}", c.number, c.title))
+                        .collect()
+                });
             set_chapters.set(Some(result));
         });
     };
