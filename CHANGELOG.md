@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.7.1](https://github.com/Aarklendoia/megatokyo/compare/v0.7.0...v0.7.1) (2026-08-25)
+
+
+### Bug Fixes
+
+* **core:** reject invalid calendar dates in the scraper's date parser ([#61](https://github.com/Aarklendoia/megatokyo/issues/61)) ([e3f1bf8](https://github.com/Aarklendoia/megatokyo/commit/e3f1bf84919bd53575128192b01a83978519f5d2)), closes [#54](https://github.com/Aarklendoia/megatokyo/issues/54)
+* **daemon:** checkpoint the newest new item, not the last one processed ([#58](https://github.com/Aarklendoia/megatokyo/issues/58)) ([32caa8b](https://github.com/Aarklendoia/megatokyo/commit/32caa8b5ffae58896da96b5845d0c382715bd376)), closes [#51](https://github.com/Aarklendoia/megatokyo/issues/51)
+* **gui:** write the GUI config file with owner-only permissions ([#57](https://github.com/Aarklendoia/megatokyo/issues/57)) ([d21b704](https://github.com/Aarklendoia/megatokyo/commit/d21b704e51812f310946a13dffdd08d051cd0a71)), closes [#50](https://github.com/Aarklendoia/megatokyo/issues/50)
+
+
+### Performance Improvements
+
+* **daemon:** reuse one HTTP client for DeepL translation requests ([#59](https://github.com/Aarklendoia/megatokyo/issues/59)) ([be9d2ab](https://github.com/Aarklendoia/megatokyo/commit/be9d2abe87f6a95f4d43b34ba86ef95cbcbe92db)), closes [#52](https://github.com/Aarklendoia/megatokyo/issues/52)
+
+
+### Code Refactoring
+
+* **gui:** dedupe hand-rolled flat-TOML field parsers ([#60](https://github.com/Aarklendoia/megatokyo/issues/60)) ([7c362c7](https://github.com/Aarklendoia/megatokyo/commit/7c362c7fc2c71ef91b3aa2d51c73ece1d22db2f3)), closes [#53](https://github.com/Aarklendoia/megatokyo/issues/53)
+
 ## [0.7.0](https://github.com/Aarklendoia/megatokyo/compare/v0.6.0...v0.7.0) (2026-08-24)
 
 
