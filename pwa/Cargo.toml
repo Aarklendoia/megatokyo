@@ -1,0 +1,19 @@
+[package]
+name = "megatokyo-pwa"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Mobile PWA client for Megatokyo, talking to the megatokyo-daemon HTTP API"
+
+[dependencies]
+megatokyo-core = { path = "../core", default-features = false }
+leptos = { version = "0.7", features = ["csr"] }
+wasm-bindgen = "0.2"
+gloo-net = "0.6"
+gloo-storage = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+web-sys = { version = "0.3", features = ["Window", "Storage"] }
+console_error_panic_hook = "0.1"
