@@ -1,0 +1,33 @@
+# cargo-deny config (.github/workflows/quality.yml's `licenses` job) — see
+# https://embarkstudios.github.io/cargo-deny/checks/licenses/cfg.html
+#
+# This project ships compiled .deb packages (build-debian.yml,
+# publish-ppa.yml), so an unreviewed transitive dependency license is a real
+# redistribution risk, not just an internal-use nicety. `cargo audit`
+# (the `security` job) only covers known vulnerabilities, not licenses.
+#
+# The allow-list below is every license actually present in Cargo.lock at
+# the time this was written (checked via `cargo metadata`) — permissive
+# licenses plus MPL-2.0 (file-level copyleft, fine to combine with this
+# project's own GPL-3.0-or-later) and Unicode-3.0 (the ICU4X data crates
+# chrono/idna pull in transitively). GPL-3.0-or-later is this workspace's
+# own license (core/daemon/gui), not a dependency's.
+
+[licenses]
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Unlicense",
+    "BSL-1.0",
+    "MPL-2.0",
+    "Unicode-3.0",
+    "CDLA-Permissive-2.0",
+    "GPL-3.0-or-later",
+]
+confidence-threshold = 0.9
+
+[graph]
+all-features = true
