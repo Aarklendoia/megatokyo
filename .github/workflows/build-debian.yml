@@ -40,7 +40,8 @@ jobs:
             devscripts \
             quilt \
             lintian \
-            pkg-config
+            pkg-config \
+            libssl-dev
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable

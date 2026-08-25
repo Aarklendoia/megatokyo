@@ -7,7 +7,8 @@ Build-Depends:
   cargo,
   rustc,
   pkg-config,
-  build-essential
+  build-essential,
+  libssl-dev
 Standards-Version: 4.6.1
 Homepage: https://github.com/Aarklendoia/megatokyo
 Vcs-Git: https://github.com/Aarklendoia/megatokyo.git

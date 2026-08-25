@@ -49,16 +49,25 @@ pub fn current_uid() -> u32 {
         .unwrap_or(1000)
 }
 
-/// 64 lowercase hex chars from `/dev/urandom` — used as the daemon's stable
-/// API token, generated once at first boot and persisted in its config.
-/// `read_exact`, not `fs::read`: the latter would block forever on a
-/// character device that never returns EOF.
-pub fn generate_ctrl_token() -> String {
-    let mut buf = [0u8; 32];
+/// `N` random bytes from `/dev/urandom` — shared by [`generate_ctrl_token`]
+/// and the daemon's VAPID keypair generation. `read_exact`, not `fs::read`:
+/// the latter would block forever on a character device that never returns
+/// EOF.
+pub fn random_bytes<const N: usize>() -> [u8; N] {
+    let mut buf = [0u8; N];
     File::open("/dev/urandom")
         .and_then(|mut f| f.read_exact(&mut buf))
-        .expect("unable to read /dev/urandom for the API token");
-    buf.iter().map(|b| format!("{b:02x}")).collect()
+        .expect("unable to read /dev/urandom");
+    buf
+}
+
+/// 64 lowercase hex chars from `/dev/urandom` — used as the daemon's stable
+/// API token, generated once at first boot and persisted in its config.
+pub fn generate_ctrl_token() -> String {
+    random_bytes::<32>()
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect()
 }
 
 /// Writes `contents` to `path` readable/writable only by the current user

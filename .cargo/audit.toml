@@ -1,0 +1,24 @@
+# cargo-audit config (.github/workflows/quality.yml's `security` job).
+#
+# Lives at `.cargo/audit.toml` — cargo-audit's actual config discovery path
+# (mirroring cargo's own `.cargo/config.toml`), *not* a bare root-level
+# `audit.toml`, which cargo-audit silently never reads. `.cargo/` is
+# otherwise gitignored (vendored offline-build deps), so `.gitignore` carves
+# out an exception for this one file — see its own comment.
+#
+# Advisories are deliberately ignored here only when they have no upstream
+# fix yet and have been consciously accepted — never to silence a warning
+# that could just be fixed by bumping a dependency. Each entry needs the
+# RUSTSEC id, a one-line reason, and a revisit date; remove the entry once a
+# fixed version is available.
+[advisories]
+ignore = [
+    # rsa 0.9.10 (Marvin Attack timing side-channel, no fix available yet) —
+    # pulled in transitively via daemon -> web-push -> jwt-simple ->
+    # superboring's generic RSA JWT support. We only ever construct
+    # ES256KeyPair (P-256/ECDSA) for VAPID signing (see daemon/src/push.rs),
+    # never touching an RSA code path, so the timing side-channel isn't
+    # reachable through our usage. Revisit 2027-02-25 — remove once
+    # jwt-simple/superboring bump past the vulnerable rsa version.
+    "RUSTSEC-2023-0071",
+]

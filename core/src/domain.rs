@@ -41,3 +41,15 @@ pub struct Favorite {
     pub strip_number: i32,
     pub added_at: String,
 }
+
+/// A browser's Web Push subscription (one per PWA install). Unlike
+/// `Favorite`/`Checking`, this is inherently multi-row even though the
+/// daemon still has no user concept: one shared API token fronts N distinct
+/// per-browser subscriptions, keyed by `endpoint`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PushSubscription {
+    pub endpoint: String,
+    pub p256dh: String,
+    pub auth: String,
+    pub created_at: String,
+}
