@@ -43,9 +43,12 @@ async fn main() {
         }
     };
 
+    let client = reqwest::Client::new();
+
     let state = Arc::new(AppState {
         store,
         image_cache,
+        http_client: client.clone(),
         token: config.api_token.clone(),
         config: tokio::sync::RwLock::new(config),
         config_path,
@@ -53,7 +56,6 @@ async fn main() {
         check_requested: tokio::sync::Notify::new(),
     });
 
-    let client = reqwest::Client::new();
     let poll_state = state.clone();
     let poll_client = client.clone();
     tokio::spawn(async move {

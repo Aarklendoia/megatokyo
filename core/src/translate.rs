@@ -39,8 +39,18 @@ pub struct Translator {
 
 impl Translator {
     pub fn new(api_key: String) -> Self {
+        Self::with_client(reqwest::Client::new(), api_key)
+    }
+
+    /// Same as [`Translator::new`], but reuses a caller-supplied client
+    /// instead of building a fresh one — lets a caller that translates
+    /// repeatedly (e.g. the daemon's `/rant` route, which builds a
+    /// `Translator` fresh per request so a `deepl_api_key` change takes
+    /// effect immediately) keep one connection pool/TLS context across
+    /// calls instead of paying a new handshake to DeepL every time.
+    pub fn with_client(client: reqwest::Client, api_key: String) -> Self {
         Self {
-            client: reqwest::Client::new(),
+            client,
             api_key,
             endpoint_override: None,
         }
