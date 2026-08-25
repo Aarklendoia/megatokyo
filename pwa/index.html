@@ -1,11 +1,25 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="ios">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- viewport-fit=cover: opts into env(safe-area-inset-*) actually
+         reporting non-zero values on a notch/Dynamic Island device,
+         instead of defaulting to 0 — see theme-ios.css's use of them. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
     <title>Megatokyo</title>
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" href="/icon.svg" />
+    <!-- iOS ignores rel="icon" SVGs for the home-screen icon; this is a
+         real rasterized PNG (see public/apple-touch-icon.png's generation
+         note) rather than a second hand-drawn asset. -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <!-- black-translucent: lets theme-ios.css's blur read under the status
+         bar instead of the status bar painting an opaque bar over it. -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="theme-color" content="#1b1b1f" />
     <!-- copy-file (not copy-dir) so these land at dist root, e.g. /sw.js
          rather than /public/sw.js — a service worker's default control
@@ -13,7 +27,10 @@
          whole app shell. -->
     <link data-trunk rel="copy-file" href="public/manifest.json" />
     <link data-trunk rel="copy-file" href="public/icon.svg" />
+    <link data-trunk rel="copy-file" href="public/apple-touch-icon.png" />
     <link data-trunk rel="copy-file" href="public/sw.js" />
+    <link data-trunk rel="copy-file" href="public/theme-ios.css" />
+    <link rel="stylesheet" href="/theme-ios.css" />
     <link data-trunk rel="rust" data-wasm-opt="0" />
   </head>
   <body>

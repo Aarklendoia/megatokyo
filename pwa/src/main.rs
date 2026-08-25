@@ -54,7 +54,7 @@ fn App() -> impl IntoView {
     view! {
         <main>
             <h1>"Megatokyo"</h1>
-            <section>
+            <section class="card">
                 <h2>"Daemon settings"</h2>
                 <label>
                     "Base URL "
@@ -73,25 +73,25 @@ fn App() -> impl IntoView {
                         on:input=move |ev| set_token.set(event_target_value(&ev))
                     />
                 </label>
-                <button on:click=save_settings>"Save"</button>
-                <button on:click=load_chapters>"Load chapters"</button>
-                <button on:click=enable_notifications>"Enable notifications"</button>
+                <button class="btn btn-primary" on:click=save_settings>"Save"</button>
+                <button class="btn" on:click=load_chapters>"Load chapters"</button>
+                <button class="btn" on:click=enable_notifications>"Enable notifications"</button>
                 {move || match notifications_status.get() {
                     None => ().into_any(),
-                    Some(Ok(())) => view! { <p>"Notifications enabled."</p> }.into_any(),
-                    Some(Err(err)) => view! { <p class="error">{err}</p> }.into_any(),
+                    Some(Ok(())) => view! { <p class="status">"Notifications enabled."</p> }.into_any(),
+                    Some(Err(err)) => view! { <p class="status error">{err}</p> }.into_any(),
                 }}
             </section>
-            <section>
+            <section class="card">
                 <h2>"Chapters"</h2>
                 {move || match chapters.get() {
-                    None => view! { <p>"Not loaded yet."</p> }.into_any(),
+                    None => view! { <p class="status">"Not loaded yet."</p> }.into_any(),
                     Some(Ok(list)) => view! {
                         <ul>
                             {list.into_iter().map(|c| view! { <li>{c}</li> }).collect_view()}
                         </ul>
                     }.into_any(),
-                    Some(Err(err)) => view! { <p class="error">{err}</p> }.into_any(),
+                    Some(Err(err)) => view! { <p class="status error">{err}</p> }.into_any(),
                 }}
             </section>
         </main>
