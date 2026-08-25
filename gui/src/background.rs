@@ -15,6 +15,7 @@ use std::time::Duration;
 
 use crate::config::{gui_config_path, GuiConfig};
 use crate::daemon_link::{self, DaemonLink};
+use crate::flat_toml;
 use crate::notification::Notifier;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -38,8 +39,10 @@ impl LastSeen {
             return Self::default();
         };
         Self {
-            last_strip_number: extract_toml_i32(&contents, "last_strip_number"),
-            last_rant_number: extract_toml_i32(&contents, "last_rant_number"),
+            last_strip_number: flat_toml::raw_value(&contents, "last_strip_number")
+                .and_then(|v| v.parse().ok()),
+            last_rant_number: flat_toml::raw_value(&contents, "last_rant_number")
+                .and_then(|v| v.parse().ok()),
         }
     }
 
@@ -56,13 +59,6 @@ impl LastSeen {
             log::warn!("could not persist {}: {err}", path.display());
         }
     }
-}
-
-fn extract_toml_i32(contents: &str, key: &str) -> Option<i32> {
-    contents.lines().find_map(|line| {
-        let rest = line.trim().strip_prefix(key)?.trim_start();
-        rest.strip_prefix('=')?.trim().parse().ok()
-    })
 }
 
 /// A number only counts as "new" once we have a real baseline to compare

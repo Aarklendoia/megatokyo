@@ -2,6 +2,7 @@ mod background;
 mod config;
 mod control;
 mod daemon_link;
+mod flat_toml;
 mod launcher;
 mod notification;
 

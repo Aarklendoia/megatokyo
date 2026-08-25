@@ -14,6 +14,8 @@ use std::time::Duration;
 
 use megatokyo_core::local_ctrl;
 
+use crate::flat_toml;
+
 pub struct DaemonLink {
     pub base_url: String,
     pub token: String,
@@ -33,22 +35,6 @@ fn daemon_config_path() -> PathBuf {
     config_home.join("megatokyo-daemon").join("config.toml")
 }
 
-/// Reads `key = "value"`'s value out of a flat TOML file — not a real TOML
-/// parser (no nesting, no escaping beyond a literal `"`), but the daemon's
-/// and this crate's own config files are both flat key/value tables, so
-/// this is all either ever needs. Pulling in the `toml` crate here just for
-/// this would be the one external dependency this binary otherwise has
-/// none of.
-fn read_toml_string_field(contents: &str, key: &str) -> Option<String> {
-    contents.lines().find_map(|line| {
-        let line = line.trim();
-        let rest = line.strip_prefix(key)?.trim_start();
-        let rest = rest.strip_prefix('=')?.trim();
-        let rest = rest.strip_prefix('"')?;
-        rest.strip_suffix('"').map(str::to_string)
-    })
-}
-
 /// `--background` mode's poll interval, read from this GUI's own config —
 /// defaults to matching the daemon's own default (see
 /// `megatokyo-daemon`'s `config::default_poll_interval_minutes`) since
@@ -57,13 +43,9 @@ pub fn poll_interval_minutes() -> u64 {
     std::fs::read_to_string(crate::config::gui_config_path())
         .ok()
         .and_then(|contents| {
-            contents.lines().find_map(|line| {
-                let rest = line
-                    .trim()
-                    .strip_prefix("poll_interval_minutes")?
-                    .trim_start();
-                rest.strip_prefix('=')?.trim().parse().ok()
-            })
+            flat_toml::raw_value(&contents, "poll_interval_minutes")?
+                .parse()
+                .ok()
         })
         .unwrap_or(15)
 }
@@ -71,15 +53,15 @@ pub fn poll_interval_minutes() -> u64 {
 /// Reads this GUI's own config, if a remote daemon override is set there.
 fn configured_remote() -> Option<DaemonLink> {
     let contents = std::fs::read_to_string(crate::config::gui_config_path()).ok()?;
-    let base_url = read_toml_string_field(&contents, "remote_base_url")?;
-    let token = read_toml_string_field(&contents, "remote_api_token")?;
+    let base_url = flat_toml::quoted_string(&contents, "remote_base_url")?;
+    let token = flat_toml::quoted_string(&contents, "remote_api_token")?;
     (!base_url.is_empty() && !token.is_empty()).then_some(DaemonLink { base_url, token })
 }
 
 fn local_daemon_from_config() -> Option<DaemonLink> {
     let contents = std::fs::read_to_string(daemon_config_path()).ok()?;
-    let bind = read_toml_string_field(&contents, "bind")?;
-    let token = read_toml_string_field(&contents, "api_token")?;
+    let bind = flat_toml::quoted_string(&contents, "bind")?;
+    let token = flat_toml::quoted_string(&contents, "api_token")?;
     Some(DaemonLink {
         base_url: format!("http://{bind}"),
         token,
@@ -142,30 +124,4 @@ pub fn resolve() -> Option<DaemonLink> {
 /// this one call.
 pub fn current_uid() -> u32 {
     local_ctrl::current_uid()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn reads_a_quoted_string_field_from_flat_toml() {
-        let toml = "bind = \"127.0.0.1:8420\"\napi_token = \"abc123\"\n";
-        assert_eq!(
-            read_toml_string_field(toml, "bind"),
-            Some("127.0.0.1:8420".to_string())
-        );
-        assert_eq!(
-            read_toml_string_field(toml, "api_token"),
-            Some("abc123".to_string())
-        );
-        assert_eq!(read_toml_string_field(toml, "missing"), None);
-    }
-
-    #[test]
-    fn does_not_confuse_a_key_that_is_a_prefix_of_another() {
-        // "bind" must not match a "bind_extra" line.
-        let toml = "bind_extra = \"nope\"\n";
-        assert_eq!(read_toml_string_field(toml, "bind"), None);
-    }
 }

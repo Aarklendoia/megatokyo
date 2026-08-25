@@ -12,6 +12,8 @@ use std::path::PathBuf;
 
 use megatokyo_core::local_ctrl::write_owner_only_file;
 
+use crate::flat_toml;
+
 pub fn gui_config_path() -> PathBuf {
     let config_home = std::env::var_os("XDG_CONFIG_HOME")
         .map(PathBuf::from)
@@ -88,18 +90,14 @@ impl GuiConfig {
     }
 }
 
-/// Same restricted, hand-rolled scalar parsing as `daemon_link`'s
-/// `read_toml_string_field` (no nesting, no multi-line values) — reads
-/// either a quoted string or a bare token (covers this module's own
-/// non-string fields too: `15`, `true`), whichever the line actually has.
+/// Built on [`flat_toml::raw_value`] — reads either a quoted string or a
+/// bare token (covers this module's own non-string fields too: `15`,
+/// `true`), whichever the line actually has.
 fn read_string(contents: &str, key: &str) -> Option<String> {
-    contents.lines().find_map(|line| {
-        let rest = line.trim().strip_prefix(key)?.trim_start();
-        let rest = rest.strip_prefix('=')?.trim();
-        Some(match rest.strip_prefix('"') {
-            Some(quoted) => unescape(quoted.strip_suffix('"')?),
-            None => rest.to_string(),
-        })
+    let rest = flat_toml::raw_value(contents, key)?;
+    Some(match rest.strip_prefix('"') {
+        Some(quoted) => unescape(quoted.strip_suffix('"')?),
+        None => rest.to_string(),
     })
 }
 
