@@ -321,15 +321,23 @@ async fn check_feed_at(
     Ok(())
 }
 
-/// Advances `checking`'s per-kind last-seen number to whichever new item of
-/// that kind comes last in `new_items` (same order `feed::fetch` returned
-/// them in — not necessarily numeric order), and stamps `last_check` to
-/// now. Pure, so it's unit-testable without touching the network.
+/// Advances `checking`'s per-kind last-seen number to the highest number
+/// seen across `new_items` of that kind, and stamps `last_check` to now.
+/// Takes the max rather than the last item processed: `new_items` is
+/// newest-first (the feed's own order, see `feed.rs`'s
+/// `items_stay_ordered_newest_first_as_the_feed_provides_them`), so a
+/// last-write-wins overwrite would record the *oldest* item of a multi-item
+/// batch instead of the newest. Pure, so it's unit-testable without
+/// touching the network.
 fn apply_checkpoint(checking: &mut Checking, new_items: &[&feed::FeedItem]) {
     for item in new_items {
         match item.kind {
-            feed::FeedItemKind::Strip => checking.last_strip_number = item.number,
-            feed::FeedItemKind::Rant => checking.last_rant_number = item.number,
+            feed::FeedItemKind::Strip => {
+                checking.last_strip_number = checking.last_strip_number.max(item.number)
+            }
+            feed::FeedItemKind::Rant => {
+                checking.last_rant_number = checking.last_rant_number.max(item.number)
+            }
         }
     }
     checking.last_check = Some(chrono::Utc::now().to_rfc3339());
@@ -474,6 +482,22 @@ mod tests {
         assert_eq!(checking.last_strip_number, 1);
         assert_eq!(checking.last_rant_number, 42);
         assert!(checking.last_check.is_some());
+    }
+
+    #[test]
+    fn apply_checkpoint_keeps_the_highest_number_when_new_items_are_newest_first() {
+        // Same order the real feed provides (newest-first): the checkpoint
+        // must end up at the newest strip (1619) even though it's not the
+        // last item processed.
+        let mut checking = Checking::default();
+        let mut newest = item("2026-01-02T00:00:00Z");
+        newest.number = 1619;
+        let mut oldest = item("2026-01-01T00:00:00Z");
+        oldest.number = 1618;
+
+        apply_checkpoint(&mut checking, &[&newest, &oldest]);
+
+        assert_eq!(checking.last_strip_number, 1619);
     }
 
     #[test]
