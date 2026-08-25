@@ -10,6 +10,8 @@
 
 use std::path::PathBuf;
 
+use megatokyo_core::local_ctrl::write_owner_only_file;
+
 pub fn gui_config_path() -> PathBuf {
     let config_home = std::env::var_os("XDG_CONFIG_HOME")
         .map(PathBuf::from)
@@ -82,7 +84,7 @@ impl GuiConfig {
             self.notifications_enabled,
             self.main_story_only,
         );
-        std::fs::write(path, contents)
+        write_owner_only_file(path, &contents)
     }
 }
 
