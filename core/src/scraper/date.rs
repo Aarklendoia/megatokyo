@@ -19,9 +19,10 @@ pub fn parse(text: &str) -> Option<String> {
     let month = month_number(month_name)?;
     let day: u32 = day.parse().ok()?;
     let year: i32 = year.parse().ok()?;
-    if !(1..=31).contains(&day) {
-        return None;
-    }
+    // Validates the day against the actual days in `month`/`year` (leap
+    // years included) rather than a flat 1..=31 range, which would accept
+    // e.g. "February 30" or "April 31".
+    chrono::NaiveDate::from_ymd_opt(year, month, day)?;
     Some(format!("{year:04}-{month:02}-{day:02}T00:00:00Z"))
 }
 
@@ -112,5 +113,18 @@ mod tests {
         assert_eq!(parse("not a date"), None);
         assert_eq!(parse(""), None);
         assert_eq!(parse("Marchtober 40, 2000"), None);
+    }
+
+    #[test]
+    fn rejects_a_day_that_does_not_exist_in_the_given_month() {
+        assert_eq!(parse("February 30, 2000"), None);
+        assert_eq!(parse("April 31, 2000"), None);
+        // 2000 is a leap year: February 29 is valid there...
+        assert_eq!(
+            parse("February 29, 2000"),
+            Some("2000-02-29T00:00:00Z".to_string())
+        );
+        // ...but not in 2001.
+        assert_eq!(parse("February 29, 2001"), None);
     }
 }
