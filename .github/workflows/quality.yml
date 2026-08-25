@@ -54,6 +54,22 @@ jobs:
       - name: Run cargo-audit
         run: cargo audit
 
+  licenses:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-deny
+        run: cargo install cargo-deny --locked --version 0.20.2
+
+      - name: Check dependency licenses
+        run: cargo deny check licenses
+
   coverage:
     runs-on: ubuntu-latest
     timeout-minutes: 30
