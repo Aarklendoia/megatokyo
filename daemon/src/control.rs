@@ -27,6 +27,9 @@ const TOKEN_HEADER: &str = "x-megatokyo-daemon-token";
 pub struct AppState {
     pub store: Store,
     pub image_cache: ImageCache,
+    /// Reused across translated-rant requests so each one doesn't pay for a
+    /// fresh connection pool/TLS handshake to DeepL — see `route_rant`.
+    pub http_client: reqwest::Client,
     pub token: String,
     /// `deepl_api_key`/`poll_interval_minutes` are editable via `GET`/`POST
     /// /config` (the Settings screen's "this daemon" section) — `bind` and
@@ -239,7 +242,7 @@ async fn route_rant(req: &str, state: &AppState) -> Response {
         let translated = if deepl_api_key.is_empty() {
             Err("no DeepL API key configured".to_string())
         } else {
-            let translator = Translator::new(deepl_api_key);
+            let translator = Translator::with_client(state.http_client.clone(), deepl_api_key);
             get_translated_rant(&state.store, &translator, number, &lang)
                 .await
                 .map_err(|e| e.to_string())
@@ -425,6 +428,7 @@ mod tests {
         AppState {
             store: Store::open_in_memory().unwrap(),
             image_cache: ImageCache::new(std::env::temp_dir()),
+            http_client: reqwest::Client::new(),
             token: "test-token".to_string(),
             config: tokio::sync::RwLock::new(test_config()),
             config_path: std::env::temp_dir().join("megatokyo-test-unused-config.toml"),
@@ -621,6 +625,7 @@ mod tests {
         AppState {
             store: Store::open_in_memory().unwrap(),
             image_cache: ImageCache::new(std::env::temp_dir()),
+            http_client: reqwest::Client::new(),
             token: "test-token".to_string(),
             config: tokio::sync::RwLock::new(test_config()),
             config_path,
