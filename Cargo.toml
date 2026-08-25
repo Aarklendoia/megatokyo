@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["core", "daemon", "gui"]
+members = ["core", "daemon", "gui", "pwa"]
 
 [workspace.package]
 version = "0.7.1"

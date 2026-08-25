@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Megatokyo</title>
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" href="/icon.svg" />
+    <meta name="theme-color" content="#1b1b1f" />
+    <!-- copy-file (not copy-dir) so these land at dist root, e.g. /sw.js
+         rather than /public/sw.js — a service worker's default control
+         scope is its own directory, and it needs to be "/" to cover the
+         whole app shell. -->
+    <link data-trunk rel="copy-file" href="public/manifest.json" />
+    <link data-trunk rel="copy-file" href="public/icon.svg" />
+    <link data-trunk rel="copy-file" href="public/sw.js" />
+    <link data-trunk rel="rust" data-wasm-opt="0" />
+  </head>
+  <body>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("/sw.js");
+        });
+      }
+    </script>
+  </body>
+</html>

@@ -72,22 +72,36 @@ async fn handle_connection(mut stream: TcpStream, state: &AppState) -> std::io::
     let req = String::from_utf8_lossy(&buf[..n]).into_owned();
     let path = request_path(&req).to_string();
 
-    let response = if path == "/health" {
-        Response::text("OK")
-    } else {
-        if !is_authorized(&req, &path, &state.token) {
-            Response {
-                status: "403 Forbidden",
-                content_type: "application/json",
-                body: b"{\"ok\":false,\"error\":\"forbidden\"}".to_vec(),
-            }
-        } else {
-            route(&req, &path, state).await
-        }
-    };
+    let response = respond(&req, &path, state).await;
 
     stream.write_all(&response.into_bytes()).await?;
     Ok(())
+}
+
+/// A browser-based client (the PWA) needs CORS: `Response::into_bytes`
+/// stamps every response with the CORS headers, and preflight `OPTIONS`
+/// requests — sent without the app's normal headers, since the browser
+/// strips them before a preflight — are answered here before the `/health`
+/// and auth checks, one level earlier than `/health` already skips auth.
+async fn respond(req: &str, path: &str, state: &AppState) -> Response {
+    if request_method(req) == "OPTIONS" {
+        return Response {
+            status: "204 No Content",
+            content_type: "text/plain",
+            body: Vec::new(),
+        };
+    }
+    if path == "/health" {
+        return Response::text("OK");
+    }
+    if !is_authorized(req, path, &state.token) {
+        return Response {
+            status: "403 Forbidden",
+            content_type: "application/json",
+            body: b"{\"ok\":false,\"error\":\"forbidden\"}".to_vec(),
+        };
+    }
+    route(req, path, state).await
 }
 
 /// Every route but `/health` requires the token header — except `/image`,
@@ -153,8 +167,12 @@ impl Response {
     }
 
     fn into_bytes(self) -> Vec<u8> {
+        // `Access-Control-Allow-Origin: *` is safe here: auth is carried in
+        // a header value (`x-megatokyo-daemon-token`), never a cookie, so
+        // there's no `credentials: include` request for a wildcard origin
+        // to leak.
         let mut out = format!(
-            "HTTP/1.1 {}\r\nContent-Type: {}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+            "HTTP/1.1 {}\r\nContent-Type: {}\r\nContent-Length: {}\r\nConnection: close\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Methods: GET, POST, OPTIONS\r\nAccess-Control-Allow-Headers: {TOKEN_HEADER}, Content-Type\r\n\r\n",
             self.status,
             self.content_type,
             self.body.len()
@@ -474,11 +492,26 @@ mod tests {
 
     async fn route_or_health(req: &str, state: &AppState) -> Response {
         let path = request_path(req).to_string();
-        if path == "/health" {
-            Response::text("OK")
-        } else {
-            route(req, &path, state).await
-        }
+        respond(req, &path, state).await
+    }
+
+    #[tokio::test]
+    async fn options_preflight_is_answered_without_a_token() {
+        let state = state();
+        let response = respond("OPTIONS /chapters HTTP/1.1\r\n", "/chapters", &state).await;
+        assert_eq!(response.status, "204 No Content");
+        assert!(response.body.is_empty());
+    }
+
+    #[test]
+    fn every_response_carries_cors_headers() {
+        let response = Response::text("OK");
+        let bytes = response.into_bytes();
+        let text = String::from_utf8(bytes).unwrap();
+        assert!(text.contains("Access-Control-Allow-Origin: *"));
+        assert!(text.contains(&format!(
+            "Access-Control-Allow-Headers: {TOKEN_HEADER}, Content-Type"
+        )));
     }
 
     #[tokio::test]

@@ -9,9 +9,11 @@
 # The allow-list below is every license actually present in Cargo.lock at
 # the time this was written (checked via `cargo metadata`) — permissive
 # licenses plus MPL-2.0 (file-level copyleft, fine to combine with this
-# project's own GPL-3.0-or-later) and Unicode-3.0 (the ICU4X data crates
-# chrono/idna pull in transitively). GPL-3.0-or-later is this workspace's
-# own license (core/daemon/gui), not a dependency's.
+# project's own GPL-3.0-or-later), Unicode-3.0 (the ICU4X data crates
+# chrono/idna pull in transitively), and Zlib (OSI-approved/FSF-free,
+# pulled in transitively by the pwa crate's Leptos dependency tree —
+# konst_macro_rules, slotmap). GPL-3.0-or-later is this workspace's own
+# license (core/daemon/gui), not a dependency's.
 
 [licenses]
 allow = [
@@ -25,6 +27,7 @@ allow = [
     "MPL-2.0",
     "Unicode-3.0",
     "CDLA-Permissive-2.0",
+    "Zlib",
     "GPL-3.0-or-later",
 ]
 confidence-threshold = 0.9

@@ -4,6 +4,9 @@ Cargo.lock
 **/*.rs.bk
 *.pdb
 
+# Trunk build output (pwa crate)
+/pwa/dist/
+
 # Vendored deps for offline Launchpad/PPA builds (regenerated per release) —
 # not meant to live in git.
 /vendor/

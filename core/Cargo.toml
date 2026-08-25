@@ -13,12 +13,20 @@ path = "src/lib.rs"
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
-rusqlite = { version = "0.32", features = ["bundled"] }
 thiserror = "2"
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
-scraper = "0.27.0"
-feed-rs = "2.4.0"
-chrono = { version = "0.4.45", default-features = false, features = ["clock"] }
+rusqlite = { version = "0.32", features = ["bundled"], optional = true }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"], optional = true }
+scraper = { version = "0.27.0", optional = true }
+feed-rs = { version = "2.4.0", optional = true }
+chrono = { version = "0.4.45", default-features = false, features = ["clock"], optional = true }
+
+[features]
+default = ["native"]
+# The scraper/store/feed/translate/image_cache modules — everything except
+# `domain` and `local_ctrl`, which stay dependency-light (serde only) so the
+# WASM-targeted `pwa` crate can pull in just the wire-format types without
+# rusqlite (bundled SQLite needs a C toolchain) or the other native-only deps.
+native = ["dep:rusqlite", "dep:reqwest", "dep:scraper", "dep:feed-rs", "dep:chrono"]
 
 [dev-dependencies]
 tempfile = "3"
