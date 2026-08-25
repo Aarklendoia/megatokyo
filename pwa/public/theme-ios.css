@@ -1,0 +1,184 @@
+/* iOS-inspired ("Liquid Glass") theme — see the note in index.html and
+ * issue #67 for what this can and can't reproduce: real-time specular
+ * refraction and layered adaptive icons aren't available to web content,
+ * so this is translucency + shape + motion only, not a pixel-perfect
+ * system-material clone. Scoped under [data-theme="ios"] so it can sit
+ * alongside a future Android theme (#68) without either leaking into the
+ * other — #69 will drive which attribute is set, this file just needs to
+ * be correct once it is.
+ */
+
+[data-theme="ios"] {
+  --ios-ink: #1b1b1f;
+  --ios-paper: #f2f2f7;
+  --ios-accent: #0a84ff;
+  --ios-danger: #ff453a;
+  --ios-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  color-scheme: light dark;
+  --ios-bg: var(--ios-paper);
+  --ios-fg: var(--ios-ink);
+  --ios-surface: rgba(255, 255, 255, 0.55);
+  --ios-surface-border: rgba(0, 0, 0, 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-theme="ios"] {
+    --ios-bg: var(--ios-ink);
+    --ios-fg: #f2f2f7;
+    --ios-surface: rgba(40, 40, 46, 0.55);
+    --ios-surface-border: rgba(255, 255, 255, 0.12);
+  }
+}
+
+[data-theme="ios"] {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--ios-bg);
+  color: var(--ios-fg);
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Text",
+    system-ui,
+    sans-serif;
+  /* Notch / Dynamic Island clearance — index.html sets viewport-fit=cover
+   * so these env() values are actually populated on a real device. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+[data-theme="ios"] main {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+[data-theme="ios"] h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 1.25rem;
+}
+
+[data-theme="ios"] h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem;
+}
+
+/* The "glass" card: translucent, blurred, generously rounded. A true
+ * superellipse clip-path (objectBoundingBox units) was tried here and
+ * visually verified broken for arbitrary-aspect-ratio content: relative
+ * corner curves stretch non-uniformly on a wide/short box and clip into
+ * the content instead of just rounding a corner (confirmed via headless
+ * Chromium screenshots at both desktop and phone viewports). border-radius
+ * doesn't have that failure mode and, at this size, reads as "continuous
+ * corner"-ish anyway — the squircle technique stays worth using on a fixed
+ * near-square element (e.g. an icon-shaped widget) if one shows up later,
+ * just not on a variable-shaped card like this. */
+[data-theme="ios"] .card {
+  background: var(--ios-surface);
+  border: 1px solid var(--ios-surface-border);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  border-radius: 26px;
+  padding: 1.25rem 1.5rem 1.5rem;
+  margin-bottom: 1.25rem;
+  animation: ios-card-in 0.5s var(--ios-spring) backwards;
+}
+
+[data-theme="ios"] .card:nth-of-type(2) {
+  animation-delay: 0.08s;
+}
+
+@keyframes ios-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+[data-theme="ios"] label {
+  display: block;
+  font-size: 0.9rem;
+  margin-bottom: 0.75rem;
+}
+
+[data-theme="ios"] input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 0.35rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid var(--ios-surface-border);
+  background: rgba(127, 127, 127, 0.1);
+  color: inherit;
+  font-size: 1rem;
+}
+
+/* Capsule controls — full pill shape, not the squircle clip (a capsule is
+ * just border-radius: 999px, no superellipse math needed). */
+[data-theme="ios"] .btn {
+  appearance: none;
+  border: none;
+  border-radius: 999px;
+  padding: 0.55rem 1.25rem;
+  margin: 0.25rem 0.4rem 0.25rem 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  background: rgba(127, 127, 127, 0.16);
+  color: var(--ios-fg);
+  cursor: pointer;
+  transition:
+    transform 0.35s var(--ios-spring),
+    background-color 0.2s ease;
+}
+
+[data-theme="ios"] .btn:hover {
+  background: rgba(127, 127, 127, 0.24);
+}
+
+[data-theme="ios"] .btn:active {
+  transform: scale(0.94);
+}
+
+[data-theme="ios"] .btn-primary {
+  background: var(--ios-accent);
+  color: #fff;
+}
+
+[data-theme="ios"] .btn-primary:hover {
+  background: var(--ios-accent);
+  filter: brightness(1.08);
+}
+
+[data-theme="ios"] .status {
+  margin-top: 0.75rem;
+  font-size: 0.9rem;
+}
+
+[data-theme="ios"] .status.error {
+  color: var(--ios-danger);
+}
+
+[data-theme="ios"] ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+[data-theme="ios"] li {
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--ios-surface-border);
+  animation: ios-card-in 0.4s var(--ios-spring) backwards;
+}
+
+[data-theme="ios"] li:last-child {
+  border-bottom: none;
+}
