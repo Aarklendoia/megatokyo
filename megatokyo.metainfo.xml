@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>megatokyo.desktop</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>Megatokyo</name>
+  <summary>Megatokyo webcomic reader</summary>
+  <description>
+    <p>
+      A QML client for browsing the Megatokyo webcomic by chapter or strip,
+      reading the author's rants with on-demand translation, and getting
+      notified when a new strip or rant goes up.
+    </p>
+    <p>
+      Talks to a megatokyo-daemon instance, local (installed automatically
+      via the package's Recommends) or remote (configured in Settings).
+    </p>
+  </description>
+  <launchable type="desktop-id">megatokyo.desktop</launchable>
+  <developer id="com.aarklendoia">
+    <name>Aarklendoïa</name>
+  </developer>
+  <categories>
+    <category>Network</category>
+  </categories>
+  <url type="homepage">https://github.com/Aarklendoia/megatokyo</url>
+  <url type="bugtracker">https://github.com/Aarklendoia/megatokyo/issues</url>
+  <provides>
+    <binary>megatokyo-gui</binary>
+  </provides>
+  <content_rating type="oars-1.1" />
+  <releases>
+    <release version="0.7.1" date="2026-08-25" />
+  </releases>
+</component>
