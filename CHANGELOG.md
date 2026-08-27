@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.8.0](https://github.com/Aarklendoia/megatokyo/compare/v0.7.1...v0.8.0) (2026-08-27)
+
+
+### Features
+
+* **daemon,pwa:** add Web Push notifications (VAPID) ([#72](https://github.com/Aarklendoia/megatokyo/issues/72)) ([571bbf2](https://github.com/Aarklendoia/megatokyo/commit/571bbf26e14ef50b497ef9780fd3cf2c9a5e198a)), closes [#66](https://github.com/Aarklendoia/megatokyo/issues/66)
+* **gui:** add AppStream MetaInfo for megatokyo-gui ([#74](https://github.com/Aarklendoia/megatokyo/issues/74)) ([23c0161](https://github.com/Aarklendoia/megatokyo/commit/23c0161947886b6e468eb65851a3c93471837d60))
+* **pwa:** add an Android-inspired (Material 3 Expressive) theme ([#75](https://github.com/Aarklendoia/megatokyo/issues/75)) ([f13e6b4](https://github.com/Aarklendoia/megatokyo/commit/f13e6b49bf4e373cbb70abb87fd55e406c9d625c)), closes [#68](https://github.com/Aarklendoia/megatokyo/issues/68)
+* **pwa:** add an iOS-inspired ("Liquid Glass") theme ([#73](https://github.com/Aarklendoia/megatokyo/issues/73)) ([333455b](https://github.com/Aarklendoia/megatokyo/commit/333455ba431c49c29a97e519ea1cb912af6276e7)), closes [#67](https://github.com/Aarklendoia/megatokyo/issues/67)
+* **pwa:** scaffold a Leptos/WASM mobile PWA client ([#70](https://github.com/Aarklendoia/megatokyo/issues/70)) ([e18c7f3](https://github.com/Aarklendoia/megatokyo/commit/e18c7f3639177caeeda90d0ec99e485733074141))
+
 ## [0.7.1](https://github.com/Aarklendoia/megatokyo/compare/v0.7.0...v0.7.1) (2026-08-25)
 
 
