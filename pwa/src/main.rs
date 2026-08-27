@@ -1,5 +1,6 @@
 mod daemon_client;
 mod push;
+mod ripple;
 mod storage;
 
 use leptos::prelude::*;
@@ -18,14 +19,16 @@ fn App() -> impl IntoView {
     let (chapters, set_chapters) = signal(None::<Result<Vec<String>, String>>);
     let (notifications_status, set_notifications_status) = signal(None::<Result<(), String>>);
 
-    let save_settings = move |_| {
+    let save_settings = move |ev: web_sys::MouseEvent| {
+        ripple::spawn(&ev);
         storage::save(&storage::DaemonLink {
             base_url: base_url.get(),
             token: token.get(),
         });
     };
 
-    let enable_notifications = move |_| {
+    let enable_notifications = move |ev: web_sys::MouseEvent| {
+        ripple::spawn(&ev);
         let base_url = base_url.get();
         let token = token.get();
         set_notifications_status.set(None);
@@ -35,7 +38,8 @@ fn App() -> impl IntoView {
         });
     };
 
-    let load_chapters = move |_| {
+    let load_chapters = move |ev: web_sys::MouseEvent| {
+        ripple::spawn(&ev);
         let base_url = base_url.get();
         let token = token.get();
         set_chapters.set(None);

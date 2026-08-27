@@ -28,9 +28,18 @@
     <link data-trunk rel="copy-file" href="public/manifest.json" />
     <link data-trunk rel="copy-file" href="public/icon.svg" />
     <link data-trunk rel="copy-file" href="public/apple-touch-icon.png" />
+    <link data-trunk rel="copy-file" href="public/icon-maskable-192.png" />
+    <link data-trunk rel="copy-file" href="public/icon-maskable-512.png" />
     <link data-trunk rel="copy-file" href="public/sw.js" />
     <link data-trunk rel="copy-file" href="public/theme-ios.css" />
+    <link data-trunk rel="copy-file" href="public/theme-android.css" />
     <link rel="stylesheet" href="/theme-ios.css" />
+    <!-- theme-android.css is scoped under [data-theme="android"] (see the
+         file's own note), so loading it unconditionally alongside
+         theme-ios.css is safe — only the attribute-matching rules apply.
+         The <html> tag above still hardcodes data-theme="ios"; #69 will
+         drive the actual switch. -->
+    <link rel="stylesheet" href="/theme-android.css" />
     <link data-trunk rel="rust" data-wasm-opt="0" />
   </head>
   <body>
