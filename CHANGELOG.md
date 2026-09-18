@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.8.0](https://github.com/Aarklendoia/megatokyo/compare/v0.7.1...v0.8.0) (2026-09-15)
+
+
+### Features
+
+* **daemon,pwa:** add Web Push notifications (VAPID) ([#72](https://github.com/Aarklendoia/megatokyo/issues/72)) ([571bbf2](https://github.com/Aarklendoia/megatokyo/commit/571bbf26e14ef50b497ef9780fd3cf2c9a5e198a)), closes [#66](https://github.com/Aarklendoia/megatokyo/issues/66)
+* **debian:** package the PWA as megatokyo-pwa ([#93](https://github.com/Aarklendoia/megatokyo/issues/93)) ([cde8a15](https://github.com/Aarklendoia/megatokyo/commit/cde8a159a4483221a13ede56c5faf6ff3addbd17))
+* **gui:** add AppStream MetaInfo for megatokyo-gui ([#74](https://github.com/Aarklendoia/megatokyo/issues/74)) ([23c0161](https://github.com/Aarklendoia/megatokyo/commit/23c0161947886b6e468eb65851a3c93471837d60))
+* **pwa:** add a daemon status bar with a manual check button ([#89](https://github.com/Aarklendoia/megatokyo/issues/89)) ([f98d489](https://github.com/Aarklendoia/megatokyo/commit/f98d489eaf4c75b46b0588a2d32588bb11b6e388)), closes [#80](https://github.com/Aarklendoia/megatokyo/issues/80)
+* **pwa:** add a Gallery screen for browsing strips by category ([#86](https://github.com/Aarklendoia/megatokyo/issues/86)) ([9aba548](https://github.com/Aarklendoia/megatokyo/commit/9aba548234dcd1583124084322c5af340bcb7c74)), closes [#77](https://github.com/Aarklendoia/megatokyo/issues/77)
+* **pwa:** add a Rants screen with search and DeepL translation ([#87](https://github.com/Aarklendoia/megatokyo/issues/87)) ([b7fbe48](https://github.com/Aarklendoia/megatokyo/commit/b7fbe4874b3e5d8a959003847c65456f36f6ebe3)), closes [#78](https://github.com/Aarklendoia/megatokyo/issues/78)
+* **pwa:** add an Android-inspired (Material 3 Expressive) theme ([#75](https://github.com/Aarklendoia/megatokyo/issues/75)) ([f13e6b4](https://github.com/Aarklendoia/megatokyo/commit/f13e6b49bf4e373cbb70abb87fd55e406c9d625c)), closes [#68](https://github.com/Aarklendoia/megatokyo/issues/68)
+* **pwa:** add an iOS-inspired ("Liquid Glass") theme ([#73](https://github.com/Aarklendoia/megatokyo/issues/73)) ([333455b](https://github.com/Aarklendoia/megatokyo/commit/333455ba431c49c29a97e519ea1cb912af6276e7)), closes [#67](https://github.com/Aarklendoia/megatokyo/issues/67)
+* **pwa:** flesh out the Dashboard with a latest-rant card and search ([#88](https://github.com/Aarklendoia/megatokyo/issues/88)) ([7e30ee6](https://github.com/Aarklendoia/megatokyo/commit/7e30ee6ffc7241f98c6d5e6f397071ef60e9b208)), closes [#79](https://github.com/Aarklendoia/megatokyo/issues/79)
+* **pwa:** localize the UI chrome (English/French) ([#91](https://github.com/Aarklendoia/megatokyo/issues/91)) ([5b633b7](https://github.com/Aarklendoia/megatokyo/commit/5b633b7b431f679c6d9c7a4bbaafab44c4a78ecc)), closes [#85](https://github.com/Aarklendoia/megatokyo/issues/85)
+* **pwa:** Reader screen, onboarding, Dashboard, and touch navigation ([#82](https://github.com/Aarklendoia/megatokyo/issues/82)) ([a7bbbdf](https://github.com/Aarklendoia/megatokyo/commit/a7bbbdfef3e9d0aa90558866f361548a8128abaa))
+* **pwa:** scaffold a Leptos/WASM mobile PWA client ([#70](https://github.com/Aarklendoia/megatokyo/issues/70)) ([e18c7f3](https://github.com/Aarklendoia/megatokyo/commit/e18c7f3639177caeeda90d0ec99e485733074141))
+* **pwa:** Settings screen parity (DeepL key, poll interval, push unsubscribe) ([#90](https://github.com/Aarklendoia/megatokyo/issues/90)) ([6053159](https://github.com/Aarklendoia/megatokyo/commit/60531597af1be54d5856b9b80139e5af1f1f9e08)), closes [#81](https://github.com/Aarklendoia/megatokyo/issues/81)
+
+
+### Bug Fixes
+
+* **pwa:** remove leftover debug chapter list from Settings ([#94](https://github.com/Aarklendoia/megatokyo/issues/94)) ([5b12233](https://github.com/Aarklendoia/megatokyo/commit/5b12233c43c50167deab44f9d2953baf64871b5a))
+
 ## [0.7.1](https://github.com/Aarklendoia/megatokyo/compare/v0.7.0...v0.7.1) (2026-08-25)
 
 
