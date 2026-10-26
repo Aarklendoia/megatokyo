@@ -37,6 +37,16 @@ instead of downloading `.deb` files from GitHub Releases. This mirrors
   https://github.com/Aarklendoia/megatokyo
   ```
 
+Supported Ubuntu series (one PPA upload each per release):
+
+| Series | Codename | Packaged cargo/rustc |
+| ------ | -------- | -------------------- |
+| 26.04 LTS | `resolute` | 1.93.1 |
+| 26.10 | `stonking` | 1.97.1 |
+
+Adding or dropping a series means updating this table and the job matrix in
+[publish-ppa.yml](../.github/workflows/publish-ppa.yml).
+
 Launchpad's build farm has no general internet access, so the plain `cargo
 build --release` in `debian/rules` would fail there — see
 [Vendoring](#2-vendoring-required-before-every-ppa-upload) for how that's
@@ -86,10 +96,14 @@ One command handles everything:
 
 ```bash
 # Check the target series' packaged cargo version first:
-rmadison -u ubuntu cargo | grep resolute
+rmadison -u ubuntu cargo | grep -E 'resolute|stonking'
 
-RUST_TOOLCHAIN=1.93.1 ./debian/scripts/prepare-offline-build.sh
+RUST_TOOLCHAIN=1.93.1 ./debian/scripts/prepare-offline-build.sh   # resolute
+RUST_TOOLCHAIN=1.97.1 ./debian/scripts/prepare-offline-build.sh   # stonking
 ```
+
+Vendor again for each series, right before its upload: each series
+needs a `vendor/` tree made with its own cargo version.
 
 This vendors Cargo dependencies into `vendor/` (+ `.cargo/config.toml`) for
 the main workspace, pre-populates a cargo registry cache for building
@@ -129,6 +143,12 @@ debuild -S -sa -k463A3894A7CAC3F707B93B2E37C96955509787D3
 dput ppa:aarklendoia-edtech/megatokyo ../megatokyo_0.1.0~ppa1~resolute1_source.changes
 ```
 
+Repeat with `stonking` in place of `resolute`, after vendoring again with
+that series' toolchain (and dropping the resolute `dch` entry, e.g.
+`git checkout debian/changelog`). `~ppa1~stonking1` sorts after
+`~ppa1~resolute1`, so a system upgraded from 26.04 to 26.10 also upgrades to
+the stonking build.
+
 Track build status at
 `https://launchpad.net/~aarklendoia-edtech/+archive/ubuntu/megatokyo/+packages`.
 
@@ -136,7 +156,9 @@ Track build status at
 
 [.github/workflows/publish-ppa.yml](../.github/workflows/publish-ppa.yml)
 automates the cycle above on every `vX.Y.Z` release tag (same trigger as
-`build-debian.yml`), or manually via `workflow_dispatch`. Needs the PPA to
+`build-debian.yml`), with one matrix job per supported series. It can also
+run manually via `workflow_dispatch` for a single series (codename + cargo
+version as inputs). Needs the PPA to
 exist (step 1 above) before it can succeed.
 
 ## 5. Once published
