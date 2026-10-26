@@ -5,6 +5,10 @@ name: Publish to Launchpad PPA
 # Release build). See docs/LAUNCHPAD.md for the full manual process this
 # automates, and for how the ~ppa1~<series>1 versioning scheme works.
 #
+# A release tag uploads one source package per supported Ubuntu series
+# (the job matrix below — keep it in sync with docs/LAUNCHPAD.md);
+# workflow_dispatch uploads to the single series given as input.
+#
 # Signs with a CI-only GPG key, registered as an additional OpenPGP key on
 # the aarklendoia-edtech Launchpad account — deliberately separate from the
 # maintainer's personal key (and from linux-hello's/kio-protondrive's own CI
@@ -31,12 +35,25 @@ env:
   GPG_KEY_ID: '463A3894A7CAC3F707B93B2E37C96955509787D3'
   DEBFULLNAME: 'megatokyo CI'
   DEBEMAIL: 'aarklendoia+ci@proton.me'
-  SERIES: ${{ github.event.inputs.series || 'resolute' }}
-  RUST_TOOLCHAIN: ${{ github.event.inputs.rust_toolchain || '1.93.1' }}
 
 jobs:
   publish-ppa:
+    name: publish-ppa (${{ matrix.series }})
     runs-on: ubuntu-latest
+    strategy:
+      # One series failing (e.g. a toolchain too old for a new dependency)
+      # mustn't cancel the other series' upload.
+      fail-fast: false
+      matrix:
+        # Each series' packaged cargo/rustc version (rmadison -u ubuntu cargo):
+        #   resolute (26.04 LTS) -> 1.93.1
+        #   stonking (26.10)     -> 1.97.1
+        include: ${{ fromJSON(github.event_name == 'workflow_dispatch'
+          && format('[{{"series":"{0}","rust_toolchain":"{1}"}}]', github.event.inputs.series, github.event.inputs.rust_toolchain)
+          || '[{"series":"resolute","rust_toolchain":"1.93.1"},{"series":"stonking","rust_toolchain":"1.97.1"}]') }}
+    env:
+      SERIES: ${{ matrix.series }}
+      RUST_TOOLCHAIN: ${{ matrix.rust_toolchain }}
     # See kio-protondrive's own publish-ppa.yml: a stuck apt-get on a
     # non-containerized runner can hang the full 6h GitHub Actions default
     # and silently never publish. Keep this short so a repeat fails fast
