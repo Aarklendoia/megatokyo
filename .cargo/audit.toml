@@ -21,4 +21,12 @@ ignore = [
     # reachable through our usage. Revisit 2027-02-25 — remove once
     # jwt-simple/superboring bump past the vulnerable rsa version.
     "RUSTSEC-2023-0071",
+    # crypto-bigint 0.5.5 (timing variability in constant-time operations,
+    # fixed only in 0.7.6, a semver-major bump) — pulled in transitively via
+    # daemon -> web-push -> jwt-simple -> elliptic-curve 0.13, which pins
+    # 0.5.x. The daemon only signs VAPID JWTs locally with its own P-256 key
+    # (see daemon/src/push.rs), and never processes attacker-timed secret
+    # operations on behalf of remote peers. Revisit 2027-02-25 — remove once
+    # web-push/jwt-simple move to elliptic-curve 0.14+.
+    "RUSTSEC-2026-0387",
 ]
